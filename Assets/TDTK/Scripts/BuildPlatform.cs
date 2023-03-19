@@ -37,6 +37,10 @@ namespace TDTK{
 		public Quaternion GetRot(){ return thisT!=null ? thisT.rotation : transform.rotation; }
 		
 		private bool formatted=false;
+		public void SetIsFormatted(bool aa)
+        {
+			formatted = aa;
+		}
 		public void Format(float gridSize=1, bool autoAdjustTextureToGrid=true){
 			if(formatted) return;
 			

@@ -22256,6 +22256,10 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.x
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 224023018383491074, guid: c405c9710e70a1946a823c5b43df017f, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: -1534.0001
+      objectReference: {fileID: 0}
     - target: {fileID: 224041305864613572, guid: c405c9710e70a1946a823c5b43df017f, type: 3}
       propertyPath: m_AnchorMax.x
       value: 0
@@ -42088,7 +42092,7 @@ MonoBehaviour:
       speed: -1
       overrideRscGain: 0
       rscGain: ffffffffffffffffffffffff
-    timeToNextWave: 20
+    timeToNextWave: 200
     activeUnitCount: 0
     spawned: 0
     cleared: 0

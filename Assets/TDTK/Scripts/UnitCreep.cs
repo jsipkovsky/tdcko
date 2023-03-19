@@ -434,8 +434,9 @@ namespace TDTK{
 		}
 		
 		public void NextWaypoint(){
+			if (path == null) return;
 			//Debug.Log("Reach   "+Time.time+"      "+targetPos+"    subWpIdx-"+subWpIdx+"    subPath.Count-"+subPath.Count);
-			
+
 			if(subPath.Count>subWpIdx) lastTargetPos=subPath[subWpIdx];
 			
 			if(!reverse){
