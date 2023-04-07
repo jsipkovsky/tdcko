@@ -47,15 +47,15 @@ public class GameHandler : MonoBehaviour
 
             var cyl = GameObject.Find("Cylinder00");
 
-            UnitCreep[] creeps = cyl.GetComponentsInChildren<UnitCreep>();
-            for(int i = 0; i < creeps.Length; i++)
-            {
-                creeps[i].activeEffectMod.stun = true;
-            }
+            //UnitCreep[] creeps = cyl.GetComponentsInChildren<UnitCreep>();
+            //for(int i = 0; i < creeps.Length; i++)
+            //{
+            //    creeps[i].activeEffectMod.stun = true;
+            //}
             // FindObjectOfType<UnitCreep>().activeEffectMod.stun = true;
             //FindObjectOfType<UnitCreep>().gameObject.transform.SetParent(GameObject.Find("Cylinder00").transform); // T
 
-            shift = shift == 1 ? 0 : 1;
+            // shift = shift == 1 ? 0 : 1;
             var angle = 0f;
             while (angle > -180)
             {
@@ -69,11 +69,11 @@ public class GameHandler : MonoBehaviour
             path1.gameObject.SetActive(true);
             path2.gameObject.SetActive(true);
 
-            for (int i = 0; i < creeps.Length; i++)
-            {
-                creeps[i].activeEffectMod.stun = false;
-                creeps[i].NextWaypoint();
-            }
+            //for (int i = 0; i < creeps.Length; i++)
+            //{
+            //    creeps[i].activeEffectMod.stun = false;
+            //    creeps[i].NextWaypoint();
+            //}
             var childs = cyl.GetComponentsInChildren<BuildPlatform>();
             for (int i = 0; i < childs.Length; i++)
             {
@@ -107,13 +107,13 @@ public class GameHandler : MonoBehaviour
             //path3.connectorPoints[0] = path3.connectorPoints[0] == 26 ? 11 : 26;
             var cyl = GameObject.Find("Cylinder10");
 
-            shift2 = shift2 == 1 ? 0 : 1;
+            //shift2 = shift2 == 1 ? 0 : 1;
 
-            UnitCreep[] creeps = cyl.GetComponentsInChildren<UnitCreep>();
-            for (int i = 0; i < creeps.Length; i++)
-            {
-                creeps[i].activeEffectMod.stun = true;
-            }
+            //UnitCreep[] creeps = cyl.GetComponentsInChildren<UnitCreep>();
+            //for (int i = 0; i < creeps.Length; i++)
+            //{
+            //    creeps[i].activeEffectMod.stun = true;
+            //}
 
             //FindObjectOfType<UnitCreep>().activeEffectMod.stun = true;
             //FindObjectOfType<UnitCreep>().canBeTargeted = false;
@@ -129,11 +129,11 @@ public class GameHandler : MonoBehaviour
             path1.gameObject.SetActive(true);
             path2.gameObject.SetActive(true);
 
-            for (int i = 0; i < creeps.Length; i++)
-            {
-                creeps[i].activeEffectMod.stun = false;
-                creeps[i].NextWaypoint();
-            }
+            //for (int i = 0; i < creeps.Length; i++)
+            //{
+            //    creeps[i].activeEffectMod.stun = false;
+            //    creeps[i].NextWaypoint();
+            //}
             var childs = cyl.GetComponentsInChildren<BuildPlatform>();
             for (int i = 0; i < childs.Length; i++)
             {

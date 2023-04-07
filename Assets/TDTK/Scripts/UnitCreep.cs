@@ -480,18 +480,20 @@ namespace TDTK{
                                     }
                                     path = GameObject.Find("Path" + (int.Parse(path.name.Substring(4, 1)) + 1).ToString() + "0").GetComponent<Path>();
 									subPath = path.GetWP(wpIdx, EnableBypass());
-									if (int.Parse(path.name.Substring(4, 1)) == 2)
-								    {
-										this.transform.SetParent(GameObject.Find("Cylinder00").transform); // T
-									} else if (int.Parse(path.name.Substring(4, 1)) == 3)
-									{
-										this.transform.SetParent(GameObject.Find("Cylinder10").transform); // T
-									} else
+                                    if (int.Parse(path.name.Substring(4, 1)) == 2)
                                     {
-										this.transform.SetParent(GameObject.Find("Cylinder20").transform); // T
-									}
+                                        this.transform.SetParent(GameObject.Find("Path20").transform); // T
+                                    }
+                                    else if (int.Parse(path.name.Substring(4, 1)) == 3)
+                                    {
+                                        this.transform.SetParent(GameObject.Find("Path30").transform); // T
+                                    }
+                                    else
+                                    {
+                                        this.transform.SetParent(GameObject.Find("Path40").transform); // T
+                                    }
 
-									if (Vector3.Distance(lastTargetPos, subPath[0]) < 0.05f) subPath.RemoveAt(0);
+                                    if (Vector3.Distance(lastTargetPos, subPath[0]) < 0.05f) subPath.RemoveAt(0);
 									if (subPath.Count == 0)
 									{
 										NextWaypoint();
