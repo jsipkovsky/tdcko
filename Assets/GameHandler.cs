@@ -33,12 +33,17 @@ public class GameHandler : MonoBehaviour
         {
             if (IsMoving) { return; }
             IsMoving = true;
-            var path1 = GameObject.Find("Path1C12").GetComponent<Path>();
-            var path2 = GameObject.Find("Path1C27").GetComponent<Path>();
+            //GameObject.Find("Level1").GetComponent<Button>().interactable = false;
+
+            var path1 = GameObject.Find("Path2C4").GetComponent<Path>();
+            var path2 = GameObject.Find("Path2C19").GetComponent<Path>();
+            //var path1 = GameObject.Find("Path1C12").GetComponent<Path>();
+            //var path2 = GameObject.Find("Path1C27").GetComponent<Path>();
 
             if(path1.GetComponentInChildren<UnitCreep>() != null ||
                 path2.GetComponentInChildren<UnitCreep>() != null)
             {
+                IsMoving = false;
                 return;
             }
 
@@ -83,6 +88,7 @@ public class GameHandler : MonoBehaviour
                 childs[i].transform.SetParent(cyl.transform);
             }
             IsMoving = false;
+            //GameObject.Find("Level1").GetComponent<Button>().interactable = true;
             //FindObjectOfType<UnitCreep>().activeEffectMod.stun = false;
             //FindObjectOfType<UnitCreep>().NextWaypoint();
         }
@@ -91,12 +97,15 @@ public class GameHandler : MonoBehaviour
             if (IsMoving) { return; }
             IsMoving = true;
 
-            var path1 = GameObject.Find("Path2C4").GetComponent<Path>();
-            var path2 = GameObject.Find("Path2C19").GetComponent<Path>();
+            //var path1 = GameObject.Find("Path2C4").GetComponent<Path>();
+            //var path2 = GameObject.Find("Path2C19").GetComponent<Path>();
+            var path1 = GameObject.Find("Path3C12").GetComponent<Path>();
+            var path2 = GameObject.Find("Path3C27").GetComponent<Path>();
 
             if (path1.GetComponentInChildren<UnitCreep>() != null ||
                 path2.GetComponentInChildren<UnitCreep>() != null)
             {
+                IsMoving = false;
                 return;
             }
 
