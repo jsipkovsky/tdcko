@@ -114,7 +114,7 @@ MonoBehaviour:
     shRate: 0
     armorType: 0
     damageType: 0
-    speed: 5
+    speed: 3
     dodge: 0.2
     dmgReduc: 0
     critReduc: 0

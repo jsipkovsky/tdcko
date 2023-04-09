@@ -22256,7 +22256,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 224023018383491074, guid: c405c9710e70a1946a823c5b43df017f, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -1534.0001
+      value: -1534
       objectReference: {fileID: 0}
     - target: {fileID: 224041305864613572, guid: c405c9710e70a1946a823c5b43df017f, type: 3}
       propertyPath: m_AnchorMax.x
@@ -40339,7 +40339,7 @@ MonoBehaviour:
   - 1
   - 1
   - 1
-  rscList: 280000000000000000000000
+  rscList: 0a0000000000000000000000
 --- !u!114 &1866772659
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -42092,7 +42092,7 @@ MonoBehaviour:
       speed: -1
       overrideRscGain: 0
       rscGain: ffffffffffffffffffffffff
-    timeToNextWave: 200
+    timeToNextWave: 20
     activeUnitCount: 0
     spawned: 0
     cleared: 0
@@ -42380,6 +42380,11 @@ MonoBehaviour:
       deviation: 0
       limitMin: -1
       limitMax: -1
+    - startValue: 0
+      incrementRate: 0
+      deviation: 0
+      limitMin: -1
+      limitMax: -1
     attPerkRscGainOnCleared:
       startValue: 1
       incrementRate: 1
@@ -42448,6 +42453,11 @@ MonoBehaviour:
         deviation: 0
         limitMin: -1
         limitMax: -1
+      - startValue: 0
+        incrementRate: 0
+        deviation: 0
+        limitMin: -1
+        limitMax: -1
     - unitPrefabID: 1
       prefab: {fileID: 114089636255029794, guid: 930e6406997a27542a548b66c144e9b5, type: 3}
       enabled: 1
@@ -42488,6 +42498,11 @@ MonoBehaviour:
         limitMin: -1
         limitMax: -1
       attRscGain:
+      - startValue: 0
+        incrementRate: 0
+        deviation: 0
+        limitMin: -1
+        limitMax: -1
       - startValue: 0
         incrementRate: 0
         deviation: 0
@@ -42548,6 +42563,11 @@ MonoBehaviour:
         deviation: 0
         limitMin: -1
         limitMax: -1
+      - startValue: 0
+        incrementRate: 0
+        deviation: 0
+        limitMin: -1
+        limitMax: -1
     - unitPrefabID: 3
       prefab: {fileID: 114548261379056564, guid: 315d6b468e677c94aa54b5c2c3f8bd16, type: 3}
       enabled: 1
@@ -42588,6 +42608,11 @@ MonoBehaviour:
         limitMin: -1
         limitMax: -1
       attRscGain:
+      - startValue: 0
+        incrementRate: 0
+        deviation: 0
+        limitMin: -1
+        limitMax: -1
       - startValue: 0
         incrementRate: 0
         deviation: 0
@@ -42648,6 +42673,11 @@ MonoBehaviour:
         deviation: 0
         limitMin: -1
         limitMax: -1
+      - startValue: 0
+        incrementRate: 0
+        deviation: 0
+        limitMin: -1
+        limitMax: -1
     - unitPrefabID: 5
       prefab: {fileID: 114049506200566766, guid: d6cd206db468caa4e95412e4a16cabd4, type: 3}
       enabled: 1
@@ -42688,6 +42718,11 @@ MonoBehaviour:
         limitMin: -1
         limitMax: -1
       attRscGain:
+      - startValue: 0
+        incrementRate: 0
+        deviation: 0
+        limitMin: -1
+        limitMax: -1
       - startValue: 0
         incrementRate: 0
         deviation: 0
@@ -42748,6 +42783,11 @@ MonoBehaviour:
         deviation: 0
         limitMin: -1
         limitMax: -1
+      - startValue: 0
+        incrementRate: 0
+        deviation: 0
+        limitMin: -1
+        limitMax: -1
     - unitPrefabID: 7
       prefab: {fileID: 114762694574170050, guid: 51ee3f6ff440cb04e95397c8cbe7123f, type: 3}
       enabled: 1
@@ -42788,6 +42828,11 @@ MonoBehaviour:
         limitMin: -1
         limitMax: -1
       attRscGain:
+      - startValue: 0
+        incrementRate: 0
+        deviation: 0
+        limitMin: -1
+        limitMax: -1
       - startValue: 0
         incrementRate: 0
         deviation: 0
@@ -42848,6 +42893,11 @@ MonoBehaviour:
         deviation: 0
         limitMin: -1
         limitMax: -1
+      - startValue: 0
+        incrementRate: 0
+        deviation: 0
+        limitMin: -1
+        limitMax: -1
     - unitPrefabID: 9
       prefab: {fileID: 114762694574170050, guid: 1975ed7ea6f80284aa1b021338066659, type: 3}
       enabled: 1
@@ -42898,8 +42948,13 @@ MonoBehaviour:
         deviation: 0
         limitMin: -1
         limitMax: -1
-    - unitPrefabID: 9
-      prefab: {fileID: 114762694574170050, guid: 1975ed7ea6f80284aa1b021338066659, type: 3}
+      - startValue: 0
+        incrementRate: 0
+        deviation: 0
+        limitMin: -1
+        limitMax: -1
+    - unitPrefabID: 10
+      prefab: {fileID: 114762694574170050, guid: a3e3c6326b7c65045857c2a423d8ab7f, type: 3}
       enabled: 1
       minWave: 0
       maxWave: -1
@@ -42938,6 +42993,11 @@ MonoBehaviour:
         limitMin: -1
         limitMax: -1
       attRscGain:
+      - startValue: 0
+        incrementRate: 0
+        deviation: 0
+        limitMin: -1
+        limitMax: -1
       - startValue: 0
         incrementRate: 0
         deviation: 0
