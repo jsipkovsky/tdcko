@@ -14,6 +14,8 @@ public class GameHandler : MonoBehaviour
 
     public static bool IsMoving;
 
+    private float cachedTimeScale = 1;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -23,8 +25,26 @@ public class GameHandler : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+
+        if (Input.GetKeyDown(KeyCode.Space)) 
+        {
+            SetTimeScale();
+        };
         // circle1.transform.Rotate(0, 0.05f, 0, Space.World);
         // circle2.transform.Rotate(0, 0.1f, 0, Space.World);
+    }
+
+    void SetTimeScale()
+    {
+        if (Time.timeScale != 0)
+        {
+            cachedTimeScale = Time.timeScale;
+            Time.timeScale = 0;
+        }
+        else
+        {
+            Time.timeScale = cachedTimeScale;
+        }
     }
 
     public async void RotateLayer(int layer)
