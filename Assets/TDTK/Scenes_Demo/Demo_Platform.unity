@@ -9759,7 +9759,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: L2
+  m_Text: Inner R.
 --- !u!222 &530332074
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -17104,7 +17104,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 856326501}
-  m_LocalRotation: {x: -0, y: 0.9985835, z: -0, w: -0.053208645}
+  m_LocalRotation: {x: -0, y: 0.59902483, z: -0, w: 0.8007305}
   m_LocalPosition: {x: 0, y: -0.16, z: 0}
   m_LocalScale: {x: 20, y: 0.001, z: 20}
   m_ConstrainProportionsScale: 0
@@ -24821,7 +24821,7 @@ GameObject:
   - component: {fileID: 1375481453}
   - component: {fileID: 1375481452}
   m_Layer: 5
-  m_Name: ButtonPerkScreen (1)
+  m_Name: OuterRotate
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -40772,7 +40772,7 @@ GameObject:
   - component: {fileID: 1898732895}
   - component: {fileID: 1898732894}
   m_Layer: 5
-  m_Name: ButtonPerkScreen (2)
+  m_Name: InnerRotate
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -48082,7 +48082,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: L1
+  m_Text: Outer R.
 --- !u!222 &2019954559
 CanvasRenderer:
   m_ObjectHideFlags: 0

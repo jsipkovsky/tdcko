@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using TDTK;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class GameHandler : MonoBehaviour
 {
@@ -12,9 +13,15 @@ public class GameHandler : MonoBehaviour
     public static int shift;
     public static int shift2;
 
-    public static bool IsMoving;
+    public static bool IsMovingOuter;
+    public static bool IsMovingInner;
 
     private float cachedTimeScale = 1;
+
+    public static int countOuter;
+    public static int countInner;
+
+    public static string txt;
 
     // Start is called before the first frame update
     void Start()
@@ -47,12 +54,42 @@ public class GameHandler : MonoBehaviour
         }
     }
 
+    public static void CheckMovePos(int level, int change)
+    {
+        if(level == 0)
+        {
+            countOuter += change;
+            if(countOuter == 0 && !IsMovingOuter)
+            {
+                GameObject.Find("OuterRotate").GetComponent<Button>().interactable = true;
+            } 
+            else
+            {
+                GameObject.Find("OuterRotate").GetComponent<Button>().interactable = false;
+            }
+        } 
+        else
+        {
+            countInner += change;
+            if (countInner == 0 && !IsMovingInner)
+            {
+                GameObject.Find("InnerRotate").GetComponent<Button>().interactable = true;
+            }
+            else
+            {
+                GameObject.Find("InnerRotate").GetComponent<Button>().interactable = false;
+            }
+        }
+        // GameObject.Find("Testtest").GetComponentInChildren<Text>().text = countOuter + "/" + countInner;
+    }
+
     public async void RotateLayer(int layer)
     {
         if (layer == 1)
         {
-            if (IsMoving) { return; }
-            IsMoving = true;
+            if (IsMovingOuter) { return; }
+            IsMovingOuter = true;
+            CheckMovePos(0, 0);
             //GameObject.Find("Level1").GetComponent<Button>().interactable = false;
 
             var path1 = GameObject.Find("Path2C4").GetComponent<Path>();
@@ -63,7 +100,7 @@ public class GameHandler : MonoBehaviour
             if(path1.GetComponentInChildren<UnitCreep>() != null ||
                 path2.GetComponentInChildren<UnitCreep>() != null)
             {
-                IsMoving = false;
+                IsMovingOuter = false;
                 return;
             }
 
@@ -107,15 +144,20 @@ public class GameHandler : MonoBehaviour
                 childs[i].GenerateGraph(1);
                 childs[i].transform.SetParent(cyl.transform);
             }
-            IsMoving = false;
+
+            await Task.Delay(500); //Task.Delay input is in milliseconds
+
+            IsMovingOuter = false;
+            CheckMovePos(0, 0);
             //GameObject.Find("Level1").GetComponent<Button>().interactable = true;
             //FindObjectOfType<UnitCreep>().activeEffectMod.stun = false;
             //FindObjectOfType<UnitCreep>().NextWaypoint();
         }
         else
         {
-            if (IsMoving) { return; }
-            IsMoving = true;
+            if (IsMovingInner) { return; }
+            IsMovingInner = true;
+            CheckMovePos(1, 0);
 
             //var path1 = GameObject.Find("Path2C4").GetComponent<Path>();
             //var path2 = GameObject.Find("Path2C19").GetComponent<Path>();
@@ -125,7 +167,7 @@ public class GameHandler : MonoBehaviour
             if (path1.GetComponentInChildren<UnitCreep>() != null ||
                 path2.GetComponentInChildren<UnitCreep>() != null)
             {
-                IsMoving = false;
+                IsMovingInner = false;
                 return;
             }
 
@@ -171,7 +213,11 @@ public class GameHandler : MonoBehaviour
                 childs[i].GenerateGraph(1);
                 childs[i].transform.SetParent(cyl.transform);
             }
-            IsMoving = false;
+
+            await Task.Delay(500); //Task.Delay input is in milliseconds
+
+            IsMovingInner = false;
+            CheckMovePos(1, 0);
 
             // path1.gameObject.GetComponentInChildren<LineRenderer>().gameObject.SetActive(true);
             //path2.gameObject.GetComponentInChildren<LineRenderer>().gameObject.SetActive(true);
