@@ -651,8 +651,8 @@ namespace TDTK{
 		public List<UnitTower> GetBuildableList(){ return buildableList; }
 		
 		public bool IsOccupied(){
-			if(GameHandler.IsMovingInner || GameHandler.IsMovingOuter) return true;
-			if(platform==null || nodeID<0 || GameHandler.IsMovingInner || GameHandler.IsMovingOuter) return false;
+			if(GameHandler.IsMovingInner || GameHandler.IsMovingOuter || GameHandler.IsMovingSmall) return true;
+			if(platform==null || nodeID<0 || GameHandler.IsMovingInner || GameHandler.IsMovingOuter || GameHandler.IsMovingSmall) return false;
 			return platform.GetNode(nodeID).IsOccupied();
 		}
 		

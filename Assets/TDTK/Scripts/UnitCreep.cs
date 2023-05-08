@@ -483,16 +483,17 @@ namespace TDTK{
                                     if (int.Parse(path.name.Substring(4, 1)) == 2)
                                     {
                                         this.transform.SetParent(GameObject.Find("Path20").transform); // T
+										GameHandler.CheckMovePos(0, -1);
 									}
                                     else if (int.Parse(path.name.Substring(4, 1)) == 3)
                                     {
                                         this.transform.SetParent(GameObject.Find("Path30").transform); // T
-										GameHandler.CheckMovePos(0, -1);
+										GameHandler.CheckMovePos(1, -1);
 									}
                                     else
                                     {
                                         this.transform.SetParent(GameObject.Find("Path40").transform); // T
-										GameHandler.CheckMovePos(1, -1);
+										GameHandler.CheckMovePos(2, -1);
 									}
 
                                     if (Vector3.Distance(lastTargetPos, subPath[0]) < 0.05f) subPath.RemoveAt(0);
@@ -571,13 +572,17 @@ namespace TDTK{
 							{
 								if (GameObject.Find(path.name.Substring(0, 5) + "C" + id.ToString()) != null)
 								{
-                                    if (path.name.Contains("2"))
-                                    {
+									if (path.name.Contains("1"))
+									{
 										GameHandler.CheckMovePos(0, 1);
+									}
+									if (path.name.Contains("2"))
+                                    {
+										GameHandler.CheckMovePos(1, 1);
 									}
 									else if (path.name.Contains("3"))
 									{
-										GameHandler.CheckMovePos(1, 1);
+										GameHandler.CheckMovePos(2, 1);
 									}
 									path = GameObject.Find(path.name.Substring(0, 5) + "C" + id.ToString()).GetComponent<Path>();
 									transform.SetParent(path.transform);

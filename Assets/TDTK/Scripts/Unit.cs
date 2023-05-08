@@ -1165,15 +1165,27 @@ namespace TDTK{
 				
 				if(!allEffectList[i].IsMultiplier()){
 					activeEffectMod.ApplyModifier(allEffectList[i], DamageTable.GetModifier(GetArmorType(), allEffectList[i].stats.damageType));
-					
-					for(int n=0; n<activeEffectMod.stats.rscGain.Count; n++) 
-						activeEffectMod.stats.rscGain[n] += allEffectList[i].stats.rscGain[n];
+
+					for (int n = 0; n < activeEffectMod.stats.rscGain.Count; n++)
+						try
+						{
+							activeEffectMod.stats.rscGain[n] += allEffectList[i].stats.rscGain[n];
+						} catch(System.ArgumentOutOfRangeException ex)
+                        {
+							Debug.Log(ex.Message);
+                        }
 				}
 				else{
 					activeEffectMul.ApplyMultiplier(allEffectList[i]);
-					
-					for(int n=0; n<activeEffectMul.stats.rscGain.Count; n++) 
+					try
+					{
+						for (int n=0; n<activeEffectMul.stats.rscGain.Count; n++) 
 						activeEffectMul.stats.rscGain[n] *= allEffectList[i].stats.rscGain[n];
+					}
+					catch (System.ArgumentOutOfRangeException ex)
+					{
+						Debug.Log(ex.Message);
+					}
 				}
 			}
 		}

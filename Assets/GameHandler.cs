@@ -7,6 +7,7 @@ using UnityEngine.UI;
 
 public class GameHandler : MonoBehaviour
 {
+    public Transform circle0;
     public Transform circle1;
     public Transform circle2;
 
@@ -15,6 +16,7 @@ public class GameHandler : MonoBehaviour
 
     public static bool IsMovingOuter;
     public static bool IsMovingInner;
+    public static bool IsMovingSmall;
 
     private float cachedTimeScale = 1;
 
@@ -37,8 +39,6 @@ public class GameHandler : MonoBehaviour
         {
             SetTimeScale();
         };
-        // circle1.transform.Rotate(0, 0.05f, 0, Space.World);
-        // circle2.transform.Rotate(0, 0.1f, 0, Space.World);
     }
 
     void SetTimeScale()
@@ -67,8 +67,8 @@ public class GameHandler : MonoBehaviour
             {
                 GameObject.Find("OuterRotate").GetComponent<Button>().interactable = false;
             }
-        } 
-        else
+        }
+        else if (level == 1)
         {
             countInner += change;
             if (countInner == 0 && !IsMovingInner)
@@ -80,24 +80,33 @@ public class GameHandler : MonoBehaviour
                 GameObject.Find("InnerRotate").GetComponent<Button>().interactable = false;
             }
         }
+        else if (level == 2)
+        {
+            countInner += change;
+            if (countInner == 0 && !IsMovingSmall)
+            {
+                GameObject.Find("SmallRotate").GetComponent<Button>().interactable = true;
+            }
+            else
+            {
+                GameObject.Find("SmallRotate").GetComponent<Button>().interactable = false;
+            }
+        }
         // GameObject.Find("Testtest").GetComponentInChildren<Text>().text = countOuter + "/" + countInner;
     }
 
     public async void RotateLayer(int layer)
     {
-        if (layer == 1)
+        if (layer == 0)
         {
             if (IsMovingOuter) { return; }
             IsMovingOuter = true;
             CheckMovePos(0, 0);
-            //GameObject.Find("Level1").GetComponent<Button>().interactable = false;
 
-            var path1 = GameObject.Find("Path2C4").GetComponent<Path>();
-            var path2 = GameObject.Find("Path2C19").GetComponent<Path>();
-            //var path1 = GameObject.Find("Path1C12").GetComponent<Path>();
-            //var path2 = GameObject.Find("Path1C27").GetComponent<Path>();
+            var path1 = GameObject.Find("Path1C12").GetComponent<Path>();
+            var path2 = GameObject.Find("Path1C27").GetComponent<Path>();
 
-            if(path1.GetComponentInChildren<UnitCreep>() != null ||
+            if (path1.GetComponentInChildren<UnitCreep>() != null ||
                 path2.GetComponentInChildren<UnitCreep>() != null)
             {
                 IsMovingOuter = false;
@@ -107,35 +116,20 @@ public class GameHandler : MonoBehaviour
             path1.gameObject.SetActive(false);
             path2.gameObject.SetActive(false);
 
-            var cyl = GameObject.Find("Cylinder00");
+            var cyl = circle0.gameObject; // GameObject.Find("CylinderOuter");
 
-            //UnitCreep[] creeps = cyl.GetComponentsInChildren<UnitCreep>();
-            //for(int i = 0; i < creeps.Length; i++)
-            //{
-            //    creeps[i].activeEffectMod.stun = true;
-            //}
-            // FindObjectOfType<UnitCreep>().activeEffectMod.stun = true;
-            //FindObjectOfType<UnitCreep>().gameObject.transform.SetParent(GameObject.Find("Cylinder00").transform); // T
-
-            // shift = shift == 1 ? 0 : 1;
             var angle = 0f;
-            while (angle > -180)
+            while (angle > -120)
             {
                 angle -= 0.5f;
-                circle1.transform.Rotate(0, -0.5f, 0, Space.World);
+                circle0.transform.Rotate(0, -0.5f, 0, Space.World);
                 await Task.Delay(1);
-                // circle2.transform.Rotate(0, 0.1f, 0, Space.World);
             }
 
 
             path1.gameObject.SetActive(true);
             path2.gameObject.SetActive(true);
 
-            //for (int i = 0; i < creeps.Length; i++)
-            //{
-            //    creeps[i].activeEffectMod.stun = false;
-            //    creeps[i].NextWaypoint();
-            //}
             var childs = cyl.GetComponentsInChildren<BuildPlatform>();
             for (int i = 0; i < childs.Length; i++)
             {
@@ -149,22 +143,18 @@ public class GameHandler : MonoBehaviour
 
             IsMovingOuter = false;
             CheckMovePos(0, 0);
-            //GameObject.Find("Level1").GetComponent<Button>().interactable = true;
-            //FindObjectOfType<UnitCreep>().activeEffectMod.stun = false;
-            //FindObjectOfType<UnitCreep>().NextWaypoint();
         }
-        else
+        else if (layer == 1)
         {
             if (IsMovingInner) { return; }
             IsMovingInner = true;
             CheckMovePos(1, 0);
+            //GameObject.Find("Level1").GetComponent<Button>().interactable = false;
 
-            //var path1 = GameObject.Find("Path2C4").GetComponent<Path>();
-            //var path2 = GameObject.Find("Path2C19").GetComponent<Path>();
-            var path1 = GameObject.Find("Path3C12").GetComponent<Path>();
-            var path2 = GameObject.Find("Path3C27").GetComponent<Path>();
+            var path1 = GameObject.Find("Path2C4").GetComponent<Path>();
+            var path2 = GameObject.Find("Path2C19").GetComponent<Path>();
 
-            if (path1.GetComponentInChildren<UnitCreep>() != null ||
+            if(path1.GetComponentInChildren<UnitCreep>() != null ||
                 path2.GetComponentInChildren<UnitCreep>() != null)
             {
                 IsMovingInner = false;
@@ -174,9 +164,54 @@ public class GameHandler : MonoBehaviour
             path1.gameObject.SetActive(false);
             path2.gameObject.SetActive(false);
 
-            //var path3 = GameObject.Find("Path30").GetComponent<Path>();
-            //path3.connectorPoints[0] = path3.connectorPoints[0] == 26 ? 11 : 26;
-            var cyl = GameObject.Find("Cylinder10");
+            var cyl = circle1.gameObject; // GameObject.Find("Cylinder00");
+
+            var angle = 0f;
+            while (angle > -120)
+            {
+                angle -= 0.5f;
+                circle1.transform.Rotate(0, -0.5f, 0, Space.World);
+                await Task.Delay(1);
+            }
+
+
+            path1.gameObject.SetActive(true);
+            path2.gameObject.SetActive(true);
+
+            var childs = cyl.GetComponentsInChildren<BuildPlatform>();
+            for (int i = 0; i < childs.Length; i++)
+            {
+                childs[i].transform.SetParent(null);
+                // childs[i].SetIsFormatted(false);
+                childs[i].GenerateGraph(1);
+                childs[i].transform.SetParent(cyl.transform);
+            }
+
+            await Task.Delay(500); //Task.Delay input is in milliseconds
+
+            IsMovingInner = false;
+            CheckMovePos(1, 0);
+        }
+        else
+        {
+            if (IsMovingSmall) { return; }
+            IsMovingSmall = true;
+            CheckMovePos(2, 0);
+
+            var path1 = GameObject.Find("Path3C12").GetComponent<Path>();
+            var path2 = GameObject.Find("Path3C27").GetComponent<Path>();
+
+            if (path1.GetComponentInChildren<UnitCreep>() != null ||
+                path2.GetComponentInChildren<UnitCreep>() != null)
+            {
+                IsMovingSmall = false;
+                return;
+            }
+
+            path1.gameObject.SetActive(false);
+            path2.gameObject.SetActive(false);
+
+            var cyl = circle2.gameObject; // GameObject.Find("Cylinder10");
 
             //shift2 = shift2 == 1 ? 0 : 1;
 
@@ -216,8 +251,8 @@ public class GameHandler : MonoBehaviour
 
             await Task.Delay(500); //Task.Delay input is in milliseconds
 
-            IsMovingInner = false;
-            CheckMovePos(1, 0);
+            IsMovingSmall = false;
+            CheckMovePos(2, 0);
 
             // path1.gameObject.GetComponentInChildren<LineRenderer>().gameObject.SetActive(true);
             //path2.gameObject.GetComponentInChildren<LineRenderer>().gameObject.SetActive(true);
