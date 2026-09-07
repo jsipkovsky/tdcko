@@ -236,7 +236,8 @@ namespace TDTK{
 			
 			if(IsTurret()){
 				ScanForTarget();
-				Attack();
+				// turn-based: turrets only fire during the resolution phase, not while planning
+				if(TurnManager.CanCreepsMove()) Attack();
 			}
 		}
 		

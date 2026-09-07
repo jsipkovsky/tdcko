@@ -66,6 +66,7 @@ namespace TDTK{
 			
 			List<float> cost=tower.GetCost();
 			for(int i=0; i<RscManager.GetResourceCount(); i++){
+				rscItemList[i].SetActive(true);
 				rscItemList[i].SetImage(RscManager.GetRscIcon(i));
 				rscItemList[i].SetLabel(i<cost.Count ? cost[i].ToString("f0") : "0");
 			}
@@ -90,6 +91,7 @@ namespace TDTK{
 			
 			List<float> cost=tower.GetSellValue();
 			for(int i=0; i<RscManager.GetResourceCount(); i++){
+				rscItemList[i].SetActive(true);
 				rscItemList[i].SetImage(RscManager.GetRscIcon(i));
 				rscItemList[i].SetLabel(i<cost.Count ? cost[i].ToString("f0") : "0");
 			}
@@ -114,6 +116,7 @@ namespace TDTK{
 			
 			List<float> cost=tower.GetUpgradeCost(uIdx);
 			for(int i=0; i<RscManager.GetResourceCount(); i++){
+				rscItemList[i].SetActive(true);
 				rscItemList[i].SetImage(RscManager.GetRscIcon(i));
 				rscItemList[i].SetLabel(i<cost.Count ? cost[i].ToString("f0") : "0");
 			}
@@ -171,6 +174,23 @@ namespace TDTK{
 		public static void Hide(){ 
 			instance.canvasGroup.alpha=0;
 			//instance.thisObj.SetActive(false);
+		}
+		
+		
+		public static void ShowCreepName(string name, Vector3 pos){ if(instance!=null) instance._ShowCreepName(name, pos); }
+		public void _ShowCreepName(string name, Vector3 pos){
+			SetPivot(0);
+			
+			labelName.text=name;
+			labelDesp.enabled=false;
+			
+			for(int i=0; i<rscItemList.Count; i++) rscItemList[i].SetActive(false);
+			
+			minHeight=-1;
+			rectT.position=pos;
+			
+			canvasGroup.alpha=1;
+			thisObj.SetActive(true);
 		}
 	
 	}

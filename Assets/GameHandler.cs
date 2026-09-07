@@ -25,10 +25,31 @@ public class GameHandler : MonoBehaviour
 
     public static string txt;
 
+    // cached rotation UI; revert appears only after a rotation is made this turn
+    private Button outerBtn, innerBtn, smallBtn, revertBtn;
+    // which ring was rotated this turn, so revert knows what to reverse (-1 = none)
+    private int lastRotatedLayer = -1;
+
     // Start is called before the first frame update
     void Start()
     {
-        
+        outerBtn = FindButton("OuterRotate");
+        innerBtn = FindButton("InnerRotate");
+        smallBtn = FindButton("SmallRotate");
+
+        var revGO = GameObject.Find("RevertButton");
+        if (revGO != null)
+        {
+            revertBtn = revGO.GetComponent<Button>();
+            if (revertBtn != null) revertBtn.onClick.AddListener(RevertRotation);
+            revGO.SetActive(false);
+        }
+    }
+
+    private Button FindButton(string n)
+    {
+        var go = GameObject.Find(n);
+        return go != null ? go.GetComponent<Button>() : null;
     }
 
     // Update is called once per frame
@@ -39,6 +60,57 @@ public class GameHandler : MonoBehaviour
         {
             SetTimeScale();
         };
+
+        RefreshRotationUI();
+        UpdateCreepHover();
+    }
+
+    // shows the hovered creep's unitName in the shared tooltip; only hides it when we were the one showing it
+    private bool creepTooltipShown = false;
+    private void UpdateCreepHover()
+    {
+        var cam = Camera.main;
+        if (cam == null) return;
+
+        bool overUI = UnityEngine.EventSystems.EventSystem.current != null
+            && UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject();
+
+        if (!overUI)
+        {
+            Ray ray = cam.ScreenPointToRay(Input.mousePosition);
+            UnitCreep nearest = null;
+            float best = Mathf.Infinity;
+            foreach (var h in Physics.RaycastAll(ray))
+            {
+                var c = h.collider.GetComponentInParent<UnitCreep>();
+                if (c != null && !c.IsDestroyed() && h.distance < best) { best = h.distance; nearest = c; }
+            }
+            if (nearest != null)
+            {
+                UITooltip.ShowCreepName(nearest.unitName, Input.mousePosition + new Vector3(14, 14, 0));
+                creepTooltipShown = true;
+                return;
+            }
+        }
+
+        if (creepTooltipShown) { UITooltip.Hide(); creepTooltipShown = false; }
+    }
+
+    // rotation buttons are usable only when the turn manager allows it (planning, off cooldown,
+    // not already rotated this turn) and the ring is clear of creeps; revert shows after a rotation
+    private void RefreshRotationUI()
+    {
+        var tm = TurnManager.GetInstance();
+
+        if (outerBtn != null) outerBtn.interactable = tm != null && tm.CanRotateRing(0) && !IsMovingOuter && countOuter == 0;
+        if (innerBtn != null) innerBtn.interactable = tm != null && tm.CanRotateRing(1) && !IsMovingInner && countInner == 0;
+        if (smallBtn != null) smallBtn.interactable = tm != null && tm.CanRotateRing(2) && !IsMovingSmall && countInner == 0;
+
+        if (revertBtn != null)
+        {
+            bool show = tm != null && tm.CanRevertRingRotation();
+            if (revertBtn.gameObject.activeSelf != show) revertBtn.gameObject.SetActive(show);
+        }
     }
 
     void SetTimeScale()
@@ -97,166 +169,98 @@ public class GameHandler : MonoBehaviour
 
     public async void RotateLayer(int layer)
     {
-        if (layer == 0)
+        var tm = TurnManager.GetInstance();
+        if (tm == null || !tm.CanRotateRing(layer)) return;
+
+        bool ok = await DoRotate(layer, false);
+        if (ok)
         {
-            if (IsMovingOuter) { return; }
-            IsMovingOuter = true;
-            CheckMovePos(0, 0);
-
-            var path1 = GameObject.Find("Path1C12").GetComponent<Path>();
-            var path2 = GameObject.Find("Path1C27").GetComponent<Path>();
-
-            if (path1.GetComponentInChildren<UnitCreep>() != null ||
-                path2.GetComponentInChildren<UnitCreep>() != null)
-            {
-                IsMovingOuter = false;
-                return;
-            }
-
-            path1.gameObject.SetActive(false);
-            path2.gameObject.SetActive(false);
-
-            var cyl = circle0.gameObject; // GameObject.Find("CylinderOuter");
-
-            var angle = 0f;
-            while (angle > -120)
-            {
-                angle -= 0.5f;
-                circle0.transform.Rotate(0, -0.5f, 0, Space.World);
-                await Task.Delay(1);
-            }
-
-
-            path1.gameObject.SetActive(true);
-            path2.gameObject.SetActive(true);
-
-            var childs = cyl.GetComponentsInChildren<BuildPlatform>();
-            for (int i = 0; i < childs.Length; i++)
-            {
-                childs[i].transform.SetParent(null);
-                // childs[i].SetIsFormatted(false);
-                childs[i].GenerateGraph(1);
-                childs[i].transform.SetParent(cyl.transform);
-            }
-
-            await Task.Delay(500); //Task.Delay input is in milliseconds
-
-            IsMovingOuter = false;
-            CheckMovePos(0, 0);
+            lastRotatedLayer = layer;
+            tm.NotifyRingRotated(layer);
         }
-        else if (layer == 1)
+    }
+
+    // reverse this turn's rotation so it's as if nothing happened (no cooldown committed)
+    public async void RevertRotation()
+    {
+        var tm = TurnManager.GetInstance();
+        if (tm == null || !tm.CanRevertRingRotation() || lastRotatedLayer < 0) return;
+
+        int layer = lastRotatedLayer;
+        bool ok = await DoRotate(layer, true);
+        if (ok)
         {
-            if (IsMovingInner) { return; }
-            IsMovingInner = true;
-            CheckMovePos(1, 0);
-            //GameObject.Find("Level1").GetComponent<Button>().interactable = false;
-
-            var path1 = GameObject.Find("Path2C4").GetComponent<Path>();
-            var path2 = GameObject.Find("Path2C19").GetComponent<Path>();
-
-            if(path1.GetComponentInChildren<UnitCreep>() != null ||
-                path2.GetComponentInChildren<UnitCreep>() != null)
-            {
-                IsMovingInner = false;
-                return;
-            }
-
-            path1.gameObject.SetActive(false);
-            path2.gameObject.SetActive(false);
-
-            var cyl = circle1.gameObject; // GameObject.Find("Cylinder00");
-
-            var angle = 0f;
-            while (angle > -120)
-            {
-                angle -= 0.5f;
-                circle1.transform.Rotate(0, -0.5f, 0, Space.World);
-                await Task.Delay(1);
-            }
-
-
-            path1.gameObject.SetActive(true);
-            path2.gameObject.SetActive(true);
-
-            var childs = cyl.GetComponentsInChildren<BuildPlatform>();
-            for (int i = 0; i < childs.Length; i++)
-            {
-                childs[i].transform.SetParent(null);
-                // childs[i].SetIsFormatted(false);
-                childs[i].GenerateGraph(1);
-                childs[i].transform.SetParent(cyl.transform);
-            }
-
-            await Task.Delay(500); //Task.Delay input is in milliseconds
-
-            IsMovingInner = false;
-            CheckMovePos(1, 0);
+            lastRotatedLayer = -1;
+            tm.OnRingRotationReverted();
         }
-        else
+    }
+
+    // shared rotation for all rings; revert=true spins back by the same angle
+    private async Task<bool> DoRotate(int layer, bool revert)
+    {
+        Transform circle; string p1n, p2n; float mag; int level;
+        switch (layer)
         {
-            if (IsMovingSmall) { return; }
-            IsMovingSmall = true;
-            CheckMovePos(2, 0);
+            case 0: circle = circle0; p1n = "Path1C12"; p2n = "Path1C27"; mag = 120f; level = 0; break;
+            case 1: circle = circle1; p1n = "Path2C4"; p2n = "Path2C19"; mag = 120f; level = 1; break;
+            default: circle = circle2; p1n = "Path3C12"; p2n = "Path3C27"; mag = 180f; level = 2; break;
+        }
 
-            var path1 = GameObject.Find("Path3C12").GetComponent<Path>();
-            var path2 = GameObject.Find("Path3C27").GetComponent<Path>();
+        if (IsLayerMoving(layer)) return false;
+        SetLayerMoving(layer, true);
+        CheckMovePos(level, 0);
 
-            if (path1.GetComponentInChildren<UnitCreep>() != null ||
-                path2.GetComponentInChildren<UnitCreep>() != null)
-            {
-                IsMovingSmall = false;
-                return;
-            }
+        var path1 = GameObject.Find(p1n).GetComponent<Path>();
+        var path2 = GameObject.Find(p2n).GetComponent<Path>();
 
-            path1.gameObject.SetActive(false);
-            path2.gameObject.SetActive(false);
+        if (path1.GetComponentInChildren<UnitCreep>() != null ||
+            path2.GetComponentInChildren<UnitCreep>() != null)
+        {
+            SetLayerMoving(layer, false);
+            return false;
+        }
 
-            var cyl = circle2.gameObject; // GameObject.Find("Cylinder10");
+        path1.gameObject.SetActive(false);
+        path2.gameObject.SetActive(false);
 
-            //shift2 = shift2 == 1 ? 0 : 1;
+        float total = revert ? mag : -mag;   // forward rotates negative, revert positive
+        float step = 0.5f * Mathf.Sign(total);
+        float rotated = 0f;
+        while (Mathf.Abs(rotated) < Mathf.Abs(total))
+        {
+            circle.Rotate(0, step, 0, Space.World);
+            rotated += step;
+            await Task.Delay(1);
+        }
 
-            //UnitCreep[] creeps = cyl.GetComponentsInChildren<UnitCreep>();
-            //for (int i = 0; i < creeps.Length; i++)
-            //{
-            //    creeps[i].activeEffectMod.stun = true;
-            //}
+        path1.gameObject.SetActive(true);
+        path2.gameObject.SetActive(true);
 
-            //FindObjectOfType<UnitCreep>().activeEffectMod.stun = true;
-            //FindObjectOfType<UnitCreep>().canBeTargeted = false;
+        var childs = circle.gameObject.GetComponentsInChildren<BuildPlatform>();
+        for (int i = 0; i < childs.Length; i++)
+        {
+            childs[i].transform.SetParent(null);
+            childs[i].GenerateGraph(1);
+            childs[i].transform.SetParent(circle.transform);
+        }
 
-            var angle = 0f;
-            while (angle > -180)
-            {
-                angle -= 0.5f;
-                circle2.transform.Rotate(0, -0.5f, 0, Space.World);
-                await Task.Delay(1);
-            }
+        await Task.Delay(500); //Task.Delay input is in milliseconds
 
-            path1.gameObject.SetActive(true);
-            path2.gameObject.SetActive(true);
+        SetLayerMoving(layer, false);
+        CheckMovePos(level, 0);
+        return true;
+    }
 
-            //for (int i = 0; i < creeps.Length; i++)
-            //{
-            //    creeps[i].activeEffectMod.stun = false;
-            //    creeps[i].NextWaypoint();
-            //}
-            var childs = cyl.GetComponentsInChildren<BuildPlatform>();
-            for (int i = 0; i < childs.Length; i++)
-            {
-                childs[i].transform.SetParent(null);
-                // childs[i].SetIsFormatted(false);
-                childs[i].GenerateGraph(1);
-                childs[i].transform.SetParent(cyl.transform);
-            }
+    private bool IsLayerMoving(int layer)
+    {
+        return layer == 0 ? IsMovingOuter : layer == 1 ? IsMovingInner : IsMovingSmall;
+    }
 
-            await Task.Delay(500); //Task.Delay input is in milliseconds
-
-            IsMovingSmall = false;
-            CheckMovePos(2, 0);
-
-            // path1.gameObject.GetComponentInChildren<LineRenderer>().gameObject.SetActive(true);
-            //path2.gameObject.GetComponentInChildren<LineRenderer>().gameObject.SetActive(true);
-        } 
+    private void SetLayerMoving(int layer, bool v)
+    {
+        if (layer == 0) IsMovingOuter = v;
+        else if (layer == 1) IsMovingInner = v;
+        else IsMovingSmall = v;
     }
 
 

@@ -43,6 +43,17 @@ namespace TDTK{
 		public int wpIdx=0;
 		public int subWpIdx=0;
 		
+		// turn-based movement budget (distance this creep may travel per turn)
+		private int observedTurn=-1;
+		private float distanceMovedThisTurn=0;
+		private bool parkedThisTurn=false;
+		public bool IsParkedThisTurn(){ return parkedThisTurn; }
+		
+		// preview simulation: NextWaypoint runs without side effects when true
+		private bool simulating=false;
+		private bool simReachedDest=false;
+		private GameObject previewGhost;
+		
 		[Header("Move Setting")]
 		public bool flying=false;
 		public override bool IsFlying(){ return flying; }
@@ -396,6 +407,18 @@ namespace TDTK{
 		private void Move(float deltaT){
 			if(path==null) return;
 			
+			// creeps only advance during the resolution phase
+			if(!TurnManager.CanCreepsMove()){ AnimPlayMove(0); return; }
+			
+			// reset the travel budget when a new turn begins
+			if(observedTurn!=TurnManager.turnNumber){
+				observedTurn=TurnManager.turnNumber;
+				distanceMovedThisTurn=0;
+				parkedThisTurn=false;
+			}
+			
+			if(parkedThisTurn){ AnimPlayMove(0); return; }
+			
 			if(!EnableBypass()){
 				//if(!reverse && !path.hasValidDestination)	Reverse();
 				if(reverse && path.hasValidDestination) ClearReverse(); 
@@ -414,9 +437,16 @@ namespace TDTK{
 			
 			float dist=Vector3.Distance(targetPos, thisT.position);
 			
-			currentSpeed=GetSpeed() * deltaT;
+			// clamp this turn's travel to the remaining distance budget, then park
+			float budget=TurnManager.GetCreepDistanceBudget(this);
+			float remaining=budget-distanceMovedThisTurn;
+			if(remaining<=0){ parkedThisTurn=true; AnimPlayMove(0); return; }
+			
+			currentSpeed=Mathf.Min(GetSpeed()*deltaT, remaining);
 			Vector3 dir=(targetPos-thisT.position).normalized;
 			thisT.Translate(dir*currentSpeed, Space.World);
+			distanceMovedThisTurn+=currentSpeed;
+			if(distanceMovedThisTurn>=budget) parkedThisTurn=true;
 			
 			if(dist<currentSpeed*2f) NextWaypoint();
 			
@@ -431,6 +461,127 @@ namespace TDTK{
 			//}
 			
 			AnimPlayMove(currentSpeed);
+		}
+		
+		// Predicts where this creep will stop at the end of the coming turn, using the
+		// real NextWaypoint traversal in a side-effect-free "simulating" mode. The live
+		// cursor (position/rotation/path/waypoint indices) is snapshotted and restored so
+		// nothing about the actual creep or the shared path data is changed.
+		public Vector3 SimulateTurnDestination(){
+			if(path==null || subPath==null || subPath.Count==0) return thisT.position;
+			if(reverse) return thisT.position;
+			
+			Path sPath=path;
+			int sWp=wpIdx, sSub=subWpIdx;
+			List<Vector3> sSubPath=subPath;
+			Vector3 sLastTarget=lastTargetPos;
+			List<Path> sPrev=prevPathList;
+			Vector3 sOffset=pathOffsetV;
+			Vector3 sPos=thisT.position;
+			Quaternion sRot=thisT.rotation;
+			
+			// work on copies so the real cursor and cached path lists stay intact
+			subPath=new List<Vector3>(subPath);
+			prevPathList=new List<Path>(prevPathList);
+			
+			simulating=true;
+			simReachedDest=false;
+			
+			float remaining=TurnManager.GetCreepDistanceBudget(this);
+			int safety=10000;
+			while(remaining>0.0001f && !simReachedDest && !reverse && safety-->0){
+				if(subPath==null || subPath.Count==0) break;
+				if(subWpIdx>=subPath.Count) subWpIdx=subPath.Count-1;
+				Vector3 target=subPath[subWpIdx]+pathOffsetV;
+				Vector3 pos=thisT.position;
+				float dist=Vector3.Distance(pos, target);
+				if(dist>remaining){
+					thisT.position=pos+(target-pos).normalized*remaining;
+					remaining=0;
+				}
+				else{
+					thisT.position=target;
+					remaining-=dist;
+					NextWaypoint();
+				}
+			}
+			
+			Vector3 result=thisT.position;
+			
+			// restore the live cursor exactly as it was
+			simulating=false;
+			simReachedDest=false;
+			path=sPath; wpIdx=sWp; subWpIdx=sSub;
+			subPath=sSubPath; lastTargetPos=sLastTarget; prevPathList=sPrev;
+			pathOffsetV=sOffset;
+			thisT.position=sPos; thisT.rotation=sRot;
+			
+			return result;
+		}
+		
+		private static Material ghostMat;
+		private static Material GetGhostMaterial(){
+			if(ghostMat!=null) return ghostMat;
+			Shader sh=Shader.Find("Universal Render Pipeline/Unlit");
+			if(sh==null) sh=Shader.Find("Unlit/Color");
+			ghostMat=new Material(sh);
+			Color c=new Color(0.35f, 0.8f, 1f, 0.35f);
+			if(ghostMat.HasProperty("_BaseColor")) ghostMat.SetColor("_BaseColor", c);
+			if(ghostMat.HasProperty("_Color")) ghostMat.SetColor("_Color", c);
+			if(ghostMat.HasProperty("_Surface")){
+				ghostMat.SetFloat("_Surface", 1f);
+				ghostMat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+				ghostMat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+				ghostMat.SetInt("_ZWrite", 0);
+				ghostMat.DisableKeyword("_SURFACE_TYPE_OPAQUE");
+				ghostMat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+			}
+			ghostMat.renderQueue=(int)UnityEngine.Rendering.RenderQueue.Transparent;
+			return ghostMat;
+		}
+		
+		private GameObject BuildGhost(){
+			GameObject g=new GameObject(name+"_ghost");
+			Material mat=GetGhostMaterial();
+			Vector3 rootLossy=thisT.lossyScale;
+			foreach(Renderer r in GetComponentsInChildren<Renderer>()){
+				if(r is ParticleSystemRenderer || r is TrailRenderer || r is LineRenderer) continue;
+				Mesh mesh=null;
+				SkinnedMeshRenderer smr=r as SkinnedMeshRenderer;
+				if(smr!=null){ mesh=new Mesh(); smr.BakeMesh(mesh); }
+				else{
+					MeshFilter mf=r.GetComponent<MeshFilter>();
+					if(mf!=null) mesh=mf.sharedMesh;
+				}
+				if(mesh==null) continue;
+				
+				GameObject part=new GameObject("part");
+				part.transform.SetParent(g.transform, false);
+				part.transform.localPosition=thisT.InverseTransformPoint(r.transform.position);
+				part.transform.localRotation=Quaternion.Inverse(thisT.rotation)*r.transform.rotation;
+				Vector3 ls=r.transform.lossyScale;
+				part.transform.localScale=new Vector3(ls.x/rootLossy.x, ls.y/rootLossy.y, ls.z/rootLossy.z);
+				
+				part.AddComponent<MeshFilter>().sharedMesh=mesh;
+				MeshRenderer pmr=part.AddComponent<MeshRenderer>();
+				Material[] mats=new Material[Mathf.Max(1, mesh.subMeshCount)];
+				for(int i=0; i<mats.Length; i++) mats[i]=mat;
+				pmr.sharedMaterials=mats;
+				pmr.shadowCastingMode=UnityEngine.Rendering.ShadowCastingMode.Off;
+			}
+			g.transform.localScale=rootLossy;
+			return g;
+		}
+		
+		public void ShowPreviewGhost(Vector3 pos){
+			if(previewGhost==null) previewGhost=BuildGhost();
+			previewGhost.transform.position=pos;
+			previewGhost.transform.rotation=thisT.rotation;
+			previewGhost.SetActive(true);
+		}
+		
+		public void HidePreviewGhost(){
+			if(previewGhost!=null){ Destroy(previewGhost); previewGhost=null; }
 		}
 		
 		public void NextWaypoint(){
@@ -452,7 +603,7 @@ namespace TDTK{
 								var sub = path.nextPathP[0];
 								path = GameObject.Find("Path10").GetComponent<Path>();
 								wpIdx = path.waypointTList.Count - sub;
-								subPath = path.GetWP(wpIdx, EnableBypass());
+								subPath = new List<Vector3>(path.GetWP(wpIdx, EnableBypass()));
 
 								// this.transform.SetParent(GameObject.Find("Cylinder00").transform); // T
 
@@ -479,7 +630,8 @@ namespace TDTK{
                                         wpIdx = path.nextPathP[idx];
                                     }
                                     path = GameObject.Find("Path" + (int.Parse(path.name.Substring(4, 1)) + 1).ToString() + "0").GetComponent<Path>();
-									subPath = path.GetWP(wpIdx, EnableBypass());
+									subPath = new List<Vector3>(path.GetWP(wpIdx, EnableBypass()));
+                                    if (!simulating) {
                                     if (int.Parse(path.name.Substring(4, 1)) == 2)
                                     {
                                         this.transform.SetParent(GameObject.Find("Path20").transform); // T
@@ -495,6 +647,7 @@ namespace TDTK{
                                         this.transform.SetParent(GameObject.Find("Path40").transform); // T
 										GameHandler.CheckMovePos(2, -1);
 									}
+                                    }
 
                                     if (Vector3.Distance(lastTargetPos, subPath[0]) < 0.05f) subPath.RemoveAt(0);
 									if (subPath.Count == 0)
@@ -504,22 +657,24 @@ namespace TDTK{
 									}
 								}
                                 catch {
+									if (simulating) { simReachedDest = true; return; }
 									ReachDestination();
 									return;
 								};
 								
 								return;
 							}
+							if (simulating) { simReachedDest = true; return; }
 							ReachDestination();
 							return;
 						}
 						else{
 		
-							path.OnCreepExit(this);
+							if(!simulating) path.OnCreepExit(this);
 							prevPathList.Add(path);
 							if(EnableBypass()) path=path.GetNextShortestPathFlying();
 							else path=path.GetNextShortestPath();
-							path.OnCreepEnter(this);
+							if(!simulating) path.OnCreepEnter(this);
 							
 							//if(!path.hasValidDestination) Reverse();
 						}
@@ -572,6 +727,7 @@ namespace TDTK{
 							{
 								if (GameObject.Find(path.name.Substring(0, 5) + "C" + id.ToString()) != null)
 								{
+									if (!simulating) {
 									if (path.name.Contains("1"))
 									{
 										GameHandler.CheckMovePos(0, 1);
@@ -584,8 +740,9 @@ namespace TDTK{
 									{
 										GameHandler.CheckMovePos(2, 1);
 									}
+									}
 									path = GameObject.Find(path.name.Substring(0, 5) + "C" + id.ToString()).GetComponent<Path>();
-									transform.SetParent(path.transform);
+									if (!simulating) transform.SetParent(path.transform);
 									wpIdx = 0;
 								}
 							}
@@ -595,7 +752,7 @@ namespace TDTK{
 							path = GameObject.Find("Path10").GetComponent<Path>();
 							wpIdx = path.waypointTList.Count - 1;
 						}
-						subPath = path.GetWP(wpIdx, EnableBypass());
+						subPath = new List<Vector3>(path.GetWP(wpIdx, EnableBypass()));
 
 						if (Vector3.Distance(lastTargetPos, subPath[0]) < 0.05f) subPath.RemoveAt(0);
 						if (subPath.Count == 0)

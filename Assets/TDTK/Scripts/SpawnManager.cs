@@ -25,6 +25,9 @@ namespace TDTK{
 		[Space(5)] [HideInInspector]
 		public List<Path> pathList=new List<Path>();
 		
+		//spawn point pool; each wave's spawn groups draw a distinct random path from this list
+		[Space(5)] public List<Path> spawnPoints=new List<Path>();
+		
 		[Space(5)] public List<Wave> waveList=new List<Wave>();
 		public static int GetTotalWaveCount(){ return instance.waveList.Count; }
 	
@@ -185,6 +188,66 @@ namespace TDTK{
 			
 			TDTK.OnNewWave(currentWaveIdx+1);
 			AudioManager.OnNewWave();
+		}
+		
+		//turn-based: place an entire wave at once (no time-based trickle)
+		public static void SpawnWaveInstant(){ if(instance!=null) instance._SpawnWaveInstant(); }
+		public void _SpawnWaveInstant(){
+			if(GameControl.IsGameOver()) return;
+			if(spawning) return;
+			if(!IsEndlessMode() && currentWaveIdx+1>=waveList.Count) return;	//no more waves
+			
+			if(!GameControl.HasGameStarted()) GameControl.StartGame();
+			
+			currentWaveIdx+=1;
+			
+			Wave wave;
+			if(!IsEndlessMode()) wave=waveList[currentWaveIdx];
+			else{
+				waveList.Add(generator.Generate(currentWaveIdx+2));
+				wave=waveList[GetListIndexFromWaveIndex(currentWaveIdx)];
+			}
+			
+			Dictionary<int, Path> groupPaths=AssignGroupPaths(wave);
+			
+			for(int s=0; s<wave.subWaveList.Count; s++){
+				SubWave sub=wave.subWaveList[s];
+				if(sub.prefab==null){ Debug.LogWarning("Prefab for sub-wave is unassigned"); continue; }
+				Path path;
+				if(!groupPaths.TryGetValue(sub.spawnGroup, out path) || path==null)
+					path=sub.path!=null ? sub.path : pathList[0];
+				for(int i=0; i<sub.spawnCount; i++){
+					UnitCreep creep=SpawnUnit(sub.prefab, wave.waveIdx, path, sub);
+					AddActiveUnit(creep);
+					wave.activeUnitCount+=1;
+				}
+			}
+			
+			wave.spawned=true;
+			
+			TDTK.OnNewWave(currentWaveIdx+1);
+			AudioManager.OnNewWave();
+		}
+		
+		//give each distinct spawn group in the wave its own random spawn point (no two groups share one)
+		private Dictionary<int, Path> AssignGroupPaths(Wave wave){
+			Dictionary<int, Path> map=new Dictionary<int, Path>();
+			if(spawnPoints==null || spawnPoints.Count==0) return map;
+			
+			List<int> groups=new List<int>();
+			for(int i=0; i<wave.subWaveList.Count; i++){
+				int g=wave.subWaveList[i].spawnGroup;
+				if(!groups.Contains(g)) groups.Add(g);
+			}
+			
+			List<Path> pool=new List<Path>(spawnPoints);
+			for(int i=0; i<groups.Count; i++){
+				if(pool.Count==0) pool=new List<Path>(spawnPoints);	//more groups than spawn points: allow reuse
+				int r=Random.Range(0, pool.Count);
+				map[groups[i]]=pool[r];
+				pool.RemoveAt(r);
+			}
+			return map;
 		}
 		
 		
@@ -417,6 +480,7 @@ namespace TDTK{
 		public float spacing=1f;
 		
 		public Path path;
+		public int spawnGroup=0;	//sub-waves sharing a spawnGroup spawn from the same (randomly chosen) spawn point each turn
 		
 		public enum _OverrideType{ Override, Multiplier }
 		//public static _OverrideType overrideType=_OverrideType.Multiplier;
