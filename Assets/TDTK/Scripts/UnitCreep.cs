@@ -138,10 +138,27 @@ namespace TDTK{
 		
 		
 		
+		// base size captured once so pooled respawns don't compound the scaling
+		public float sizeMultiplier=2f;
+		private Vector3 baseScale=Vector3.one;
+		private float baseRadius=.25f;
+		private bool baseSizeCaptured=false;
+		
 		public override void Awake(){
 			base.Awake();
 			
+			if(!baseSizeCaptured){
+				baseScale=thisT.localScale;
+				baseRadius=unitRadius;
+				baseSizeCaptured=true;
+			}
+			
 			RscManager.MatchRscList(rscGainOnDestroyed, 0);
+		}
+		
+		void ApplySize(){
+			thisT.localScale=baseScale*sizeMultiplier;
+			unitRadius=baseRadius*sizeMultiplier;
 		}
 		
 		
@@ -171,6 +188,8 @@ namespace TDTK{
 		
 		
 		public void Init(int waveIndex, Path p, int wpIndex=-1, int subWpIndex=-1, bool resetPos=true, bool rr=false, List<Path> prevP=null, List<Vector3> sPath=null){
+			ApplySize();
+			
 			waveIdx=waveIndex;
 			wpIdx=wpIndex>=0 ? wpIndex : 0;
 			subWpIdx=subWpIndex>=0 ? subWpIndex : 0;

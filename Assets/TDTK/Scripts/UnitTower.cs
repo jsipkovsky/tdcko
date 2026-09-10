@@ -115,9 +115,19 @@ namespace TDTK{
 		[Space(10)][Tooltip("Use in Free-Form mode only, specify the space occupied by the tower")]
 		public float radius=.5f;
 		
+		// tower is scaled up so each occupies a 2x2 footprint; captured once to stay pool-safe
+		public float sizeMultiplier=2f;
+		private Vector3 baseScale=Vector3.one;
+		private bool baseSizeCaptured=false;
+		
 		
 		public override void Awake(){
 			base.Awake();
+			
+			if(!baseSizeCaptured){
+				baseScale=thisT.localScale;
+				baseSizeCaptured=true;
+			}
 			
 			for(int i=0; i<upgradeTowerList.Count; i++){
 				if(upgradeTowerList[i]==null) upgradeTowerList.RemoveAt(i);
@@ -125,6 +135,8 @@ namespace TDTK{
 		}
 		
 		public void Init(){
+			thisT.localScale=baseScale*sizeMultiplier;
+			
 			if(!isPreview){
 				if(instanceID<0) TowerManager.PreBuildTower(this);
 				else Build();

@@ -23,6 +23,11 @@ When resolution settles, the next turn begins — or the game ends (base destroy
 - The player may rotate **one ring per turn**. A used rotation can be **reverted** in the same planning phase before ending the turn.
 - After a rotation is committed (turn ended), rotations are locked out for `ringRechargeTurns` (default **3**) turns via a shared cooldown.
 
+### Building towers
+
+- Built towers occupy a **2×2 footprint** — a new tower can't be placed on a tile directly adjacent to an existing tower (minimum-spacing check).
+- While placing, a **ghost preview** follows the cursor and stays on the board; occupied or too-close tiles reject the build.
+
 ### Economy
 
 - Each planning turn grants income: `defaultIncomePerTurn` (default **20** gold), with optional per-turn overrides via `incomePerTurnOverrides` (index 0 = turn 1).
@@ -58,6 +63,8 @@ Available creeps in the Creep database (`Resources/DB/CreepDB`):
 | Ogre | Heavy elite |
 
 > Note: some source spreadsheets reference an "Orc King" — that creep is **not** in the current Creep_DB and must be added before it can be spawned.
+
+Hovering the cursor over a creep shows a popup with its name, HP, and (if any) shield.
 
 ## Project layout
 

@@ -58,7 +58,8 @@ namespace TDTK {
 		public float maxPosZ=10;
 		
 		public float minZoomDistance=8;
-		public float maxZoomDistance=30;
+		public float maxZoomDistance=40;
+		public float startZoomDistance=37;	//initial zoom-out distance applied on start
 		
 		public float minRotateAngle=10;
 		public float maxRotateAngle=89;
@@ -80,6 +81,10 @@ namespace TDTK {
 		
 		void Start(){
 			camT=thisT.GetChild(0);//Camera.main.transform;
+			if(startZoomDistance>0){
+				float z=-Mathf.Clamp(startZoomDistance, minZoomDistance, maxZoomDistance);
+				camT.localPosition=new Vector3(camT.localPosition.x, camT.localPosition.y, z);
+			}
 			currentZoom=camT.localPosition.z;
 		}
 		

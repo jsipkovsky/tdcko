@@ -28,6 +28,20 @@ namespace TDTK{
 		public static List<UnitTower> GetActiveTowerList(){ return instance!=null ? instance.activeTowerList : null; }
 		public static List<Unit> GetActiveUnitList(){ return instance.activeTowerList.ConvertAll(x => (Unit)x); }
 		
+		public const float TowerMinSpacing=1.9f;	//reject build points closer than this to an existing tower (2x2 footprint)
+		
+		//keep towers spaced apart (2x2 footprint) - reject a build point too close to an existing tower
+		public static bool HasTowerWithinRange(Vector3 pos, float range){
+			if(instance==null) return false;
+			float sqrRange=range*range;
+			for(int i=0; i<instance.activeTowerList.Count; i++){
+				UnitTower tower=instance.activeTowerList[i];
+				if(tower==null) continue;
+				if((tower.GetPos()-pos).sqrMagnitude<sqrRange) return true;
+			}
+			return false;
+		}
+		
 		
 		public static List<UnitTower> GetAllTowerOfType1(int prefabID){	//find all similar tower (using prefabID)
 			List<UnitTower> list=new List<UnitTower>();
@@ -206,7 +220,8 @@ namespace TDTK{
 					
 					sInfo=GetSelectInfo(cursorPos, dndInstanceID, dndTower.radius);
 					
-					if(sInfo.HasWorldPoint() && !sInfo.IsOccupied()) dndTower.transform.position=sInfo.GetPos();
+					// keep preview on the board even over an occupied node, else it jumps toward the camera and balloons
+					if(sInfo.HasWorldPoint()) dndTower.transform.position=sInfo.GetPos();
 					else{
 						//dndTower.transform.position=CameraControl.GetMainCam().transform.TransformPoint(0, 0, 15);
 						dndTower.transform.position=CameraControl.GetMainCam().ScreenToWorldPoint(cursorPos+new Vector3(0, 0, 15));
@@ -636,7 +651,8 @@ namespace TDTK{
 		
 		public bool AvailableForBuild(){
 			if(TowerManager.UseFreeFormMode()) return !invalidPoint;
-			return !platform.GetNode(nodeID).IsBlockedForTower() && GetTower()==null && !platform.GetNode(nodeID).IsOccupied();
+			if(platform.GetNode(nodeID).IsBlockedForTower() || GetTower()!=null || platform.GetNode(nodeID).IsOccupied()) return false;
+			return !TowerManager.HasTowerWithinRange(GetPos(), TowerManager.TowerMinSpacing);
 		}
 		public bool PathBlocked(){
 			return !platform.CheckForNode(nodeID);
