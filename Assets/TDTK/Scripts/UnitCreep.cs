@@ -446,10 +446,12 @@ namespace TDTK{
 			//if(path.GetWP(wpIdx).Count>0) subPath=path.GetWP(wpIdx);
 			//subWpIdx=Mathf.Min(subWpIdx, subPath.Count-1);
 			
+			// dead-end this frame (e.g. a ring rotation left an empty/invalid subpath): park so the
+			// creep counts as done for the turn instead of stalling resolution and hiding End Turn
 			if(subPath.Count==0){ 
-				Debug.LogWarning("no subpath?"); return; 
+				Debug.LogWarning("no subpath?"); parkedThisTurn=true; AnimPlayMove(0); return; 
 			}
-			if(subWpIdx>=subPath.Count){ Debug.LogWarning("subWpIdx exceed subpath length?"); subWpIdx=subPath.Count-1; return; }
+			if(subWpIdx>=subPath.Count){ Debug.LogWarning("subWpIdx exceed subpath length?"); subWpIdx=subPath.Count-1; parkedThisTurn=true; AnimPlayMove(0); return; }
 			
 			//subPath=path.GetWP(wpIdx, EnableBypass());	//enable this to get the creep to update wp every frame (for moving wp), doesnt work for platform
 			targetPos=subPath[subWpIdx]+pathOffsetV;
@@ -506,34 +508,41 @@ namespace TDTK{
 			simulating=true;
 			simReachedDest=false;
 			
-			float remaining=TurnManager.GetCreepDistanceBudget(this);
-			int safety=10000;
-			while(remaining>0.0001f && !simReachedDest && !reverse && safety-->0){
-				if(subPath==null || subPath.Count==0) break;
-				if(subWpIdx>=subPath.Count) subWpIdx=subPath.Count-1;
-				Vector3 target=subPath[subWpIdx]+pathOffsetV;
-				Vector3 pos=thisT.position;
-				float dist=Vector3.Distance(pos, target);
-				if(dist>remaining){
-					thisT.position=pos+(target-pos).normalized*remaining;
-					remaining=0;
+			// fall back to the current position if the traversal throws (e.g. malformed path data)
+			Vector3 result=sPos;
+			try{
+				float remaining=TurnManager.GetCreepDistanceBudget(this);
+				int safety=10000;
+				while(remaining>0.0001f && !simReachedDest && !reverse && safety-->0){
+					if(subPath==null || subPath.Count==0) break;
+					if(subWpIdx>=subPath.Count) subWpIdx=subPath.Count-1;
+					Vector3 target=subPath[subWpIdx]+pathOffsetV;
+					Vector3 pos=thisT.position;
+					float dist=Vector3.Distance(pos, target);
+					if(dist>remaining){
+						thisT.position=pos+(target-pos).normalized*remaining;
+						remaining=0;
+					}
+					else{
+						thisT.position=target;
+						remaining-=dist;
+						NextWaypoint();
+					}
 				}
-				else{
-					thisT.position=target;
-					remaining-=dist;
-					NextWaypoint();
-				}
+				result=thisT.position;
 			}
-			
-			Vector3 result=thisT.position;
-			
-			// restore the live cursor exactly as it was
-			simulating=false;
-			simReachedDest=false;
-			path=sPath; wpIdx=sWp; subWpIdx=sSub;
-			subPath=sSubPath; lastTargetPos=sLastTarget; prevPathList=sPrev;
-			pathOffsetV=sOffset;
-			thisT.position=sPos; thisT.rotation=sRot;
+			catch(System.Exception e){
+				Debug.LogWarning("SimulateTurnDestination failed, skipping preview: "+e.Message);
+			}
+			finally{
+				// always restore the live cursor exactly as it was, even if the sim threw
+				simulating=false;
+				simReachedDest=false;
+				path=sPath; wpIdx=sWp; subWpIdx=sSub;
+				subPath=sSubPath; lastTargetPos=sLastTarget; prevPathList=sPrev;
+				pathOffsetV=sOffset;
+				thisT.position=sPos; thisT.rotation=sRot;
+			}
 			
 			return result;
 		}
@@ -664,20 +673,24 @@ namespace TDTK{
 						if(path.IsEnd()){
 							if (path.name.StartsWith("Path0"))
 							{
-								var sub = path.nextPathP[0];
-								path = GameObject.Find("Path10").GetComponent<Path>();
-								wpIdx = path.waypointTList.Count - sub;
-								subPath = new List<Vector3>(path.GetWP(wpIdx, EnableBypass()));
-
-								// this.transform.SetParent(GameObject.Find("Cylinder00").transform); // T
-
-								if (Vector3.Distance(lastTargetPos, subPath[0]) < 0.05f) subPath.RemoveAt(0);
-								if (subPath.Count == 0)
+								// no next path point configured: fall through to the reached-destination handling below
+								if (path.nextPathP.Count > 0)
 								{
-									NextWaypoint();
+									var sub = path.nextPathP[0];
+									path = GameObject.Find("Path10").GetComponent<Path>();
+									wpIdx = path.waypointTList.Count - sub;
+									subPath = new List<Vector3>(path.GetWP(wpIdx, EnableBypass()));
+
+									// this.transform.SetParent(GameObject.Find("Cylinder00").transform); // T
+
+									if (Vector3.Distance(lastTargetPos, subPath[0]) < 0.05f) subPath.RemoveAt(0);
+									if (subPath.Count == 0)
+									{
+										NextWaypoint();
+										return;
+									}
 									return;
 								}
-								return;
 							}
 							if (path.name.Contains("C"))
 							{
