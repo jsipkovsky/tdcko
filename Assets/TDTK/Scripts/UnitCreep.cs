@@ -561,8 +561,13 @@ namespace TDTK{
 		
 		private GameObject BuildGhost(){
 			GameObject g=new GameObject(name+"_ghost");
-			Material mat=GetGhostMaterial();
+			g.layer=2;	//Ignore Raycast: skipped by gameplay/camera raycasts, picked up only via explicit mask on hover
+			Material mat=new Material(GetGhostMaterial());	//per-ghost instance so it can be tinted individually
+			ghostMatInstance=mat;
+			ApplyGhostColor(mat, ghostColNormal);
 			Vector3 rootLossy=thisT.lossyScale;
+			Bounds localBounds=new Bounds();
+			bool hasBounds=false;
 			foreach(Renderer r in GetComponentsInChildren<Renderer>()){
 				if(r is ParticleSystemRenderer || r is TrailRenderer || r is LineRenderer) continue;
 				Mesh mesh=null;
@@ -587,8 +592,23 @@ namespace TDTK{
 				for(int i=0; i<mats.Length; i++) mats[i]=mat;
 				pmr.sharedMaterials=mats;
 				pmr.shadowCastingMode=UnityEngine.Rendering.ShadowCastingMode.Off;
+				
+				Bounds mb=mesh.bounds;
+				for(int cx=-1; cx<=1; cx+=2) for(int cy=-1; cy<=1; cy+=2) for(int cz=-1; cz<=1; cz+=2){
+					Vector3 corner=mb.center+Vector3.Scale(mb.extents, new Vector3(cx, cy, cz));
+					Vector3 gLocal=part.transform.localRotation*Vector3.Scale(corner, part.transform.localScale)+part.transform.localPosition;
+					if(!hasBounds){ localBounds=new Bounds(gLocal, Vector3.zero); hasBounds=true; }
+					else localBounds.Encapsulate(gLocal);
+				}
 			}
 			g.transform.localScale=rootLossy;
+			ghostBaseScale=rootLossy;
+			if(hasBounds){
+				BoxCollider bc=g.AddComponent<BoxCollider>();
+				bc.center=localBounds.center;
+				bc.size=localBounds.size;
+			}
+			g.AddComponent<GhostRef>().creep=this;
 			return g;
 		}
 		
@@ -601,6 +621,31 @@ namespace TDTK{
 		
 		public void HidePreviewGhost(){
 			if(previewGhost!=null){ Destroy(previewGhost); previewGhost=null; }
+			if(ghostMatInstance!=null){ Destroy(ghostMatInstance); ghostMatInstance=null; }
+		}
+		
+		// hover feedback: when the creep or its ghost is hovered, the ghost recolors + grows and the
+		// creep grows slightly, so the pairing reads clearly from either end
+		private static readonly Color ghostColNormal=new Color(0.35f, 0.8f, 1f, 0.35f);
+		private static readonly Color ghostColHighlight=new Color(1f, 0.85f, 0.2f, 0.75f);
+		private const float ghostHighlightScale=1.3f;
+		private const float creepHighlightScale=1.3f;
+		private Material ghostMatInstance;
+		private Vector3 ghostBaseScale=Vector3.one;
+		private Vector3 creepBaseScale;
+		private bool creepBaseScaleStored=false;
+		
+		public void SetHovered(bool on){
+			if(ghostMatInstance!=null) ApplyGhostColor(ghostMatInstance, on ? ghostColHighlight : ghostColNormal);
+			if(previewGhost!=null) previewGhost.transform.localScale=on ? ghostBaseScale*ghostHighlightScale : ghostBaseScale;
+			
+			if(!creepBaseScaleStored){ creepBaseScale=thisT.localScale; creepBaseScaleStored=true; }
+			thisT.localScale=on ? creepBaseScale*creepHighlightScale : creepBaseScale;
+		}
+		
+		private static void ApplyGhostColor(Material m, Color c){
+			if(m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", c);
+			if(m.HasProperty("_Color")) m.SetColor("_Color", c);
 		}
 		
 		public void NextWaypoint(){
@@ -1060,6 +1105,11 @@ namespace TDTK{
 			}
 		}
 		
+	}
+
+	// links a preview ghost GameObject back to its owning creep so hover code can resolve the pair
+	public class GhostRef : MonoBehaviour{
+		public UnitCreep creep;
 	}
 
 }

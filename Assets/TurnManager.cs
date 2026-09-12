@@ -188,7 +188,8 @@ public class TurnManager : MonoBehaviour
         {
             UnitCreep creep = list[i].GetCreep();
             if (creep == null) continue;
-            if (!creep.IsParkedThisTurn()) return false;
+            // a stunned creep can't move this turn, so it shouldn't block resolution
+            if (!creep.IsParkedThisTurn() && !creep.IsStunned()) return false;
         }
         return true;
     }

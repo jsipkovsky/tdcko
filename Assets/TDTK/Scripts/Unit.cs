@@ -211,7 +211,7 @@ namespace TDTK{
 				
 				float hpRate=GetEffHPRate();
 				if(hpRate>0){
-					hp += hpRate * Time.fixedDeltaTime;
+					hp = Mathf.Min(GetFullHP(), hp + hpRate * Time.fixedDeltaTime);
 				}
 				else if(hpRate<0){
 					hpRate=ApplyShieldDamage(-hpRate * Time.fixedDeltaTime);
