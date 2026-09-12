@@ -40,7 +40,7 @@ MonoBehaviour:
     replaceTowerPID: -1
     replaceAbilityPID: -1
     applyToAll: 0
-    towerPIDList: 00000000
+    towerPIDList: 00000000i
     abilityPIDList: 
     perkPIDList: 
     effectPIDList: 
@@ -162,7 +162,7 @@ MonoBehaviour:
     towerPIDList: 
     abilityPIDList: 
     perkPIDList: 
-    effectPIDList: 0100000004000000
+    effectPIDList: 0100000004000000i
     effect:
       prefabID: -1
       instanceID: -1
@@ -278,7 +278,7 @@ MonoBehaviour:
     replaceTowerPID: -1
     replaceAbilityPID: -1
     applyToAll: 0
-    towerPIDList: 01000000
+    towerPIDList: 01000000i
     abilityPIDList: 
     perkPIDList: 
     effectPIDList: 
@@ -332,7 +332,7 @@ MonoBehaviour:
         critMultiplier: 0
         effectOnHitChance: 0.25
         overrideExistingEffect: 1
-        effectOnHitIDList: 06000000
+        effectOnHitIDList: 06000000i
         hit_AOE: 0
         damageMin_AOE: 0
         damageMax_AOE: 0
@@ -397,7 +397,7 @@ MonoBehaviour:
     replaceTowerPID: -1
     replaceAbilityPID: -1
     applyToAll: 0
-    towerPIDList: 08000000
+    towerPIDList: 08000000i
     abilityPIDList: 
     perkPIDList: 
     effectPIDList: 
@@ -517,7 +517,7 @@ MonoBehaviour:
     replaceTowerPID: -1
     replaceAbilityPID: -1
     applyToAll: 0
-    towerPIDList: 07000000
+    towerPIDList: 07000000i
     abilityPIDList: 
     perkPIDList: 
     effectPIDList: 
@@ -617,8 +617,7 @@ MonoBehaviour:
     instanceID: -1
     icon: {fileID: 21300010, guid: c1bf8f531a58e5a43a7677bc162c964a, type: 3}
     name: Unlock Resource Tower
-    desp: "Allow construction of 'Resource Tower' that generate resource overtime
-      \nAutomatically purchased on wave-3"
+    desp: "Allow construction of 'Resource Tower' that generate resource overtime \nAutomatically purchased on wave-3"
     type: 0
     groupID: 0
     hideInInspector: 0
@@ -871,7 +870,7 @@ MonoBehaviour:
     minLevel: 0
     minWave: 0
     minPerkCount: 0
-    prereq: 000000000100000002000000
+    prereq: 000000000100000002000000i
     repeatable: 0
     effType: 0
     newTowerPID: -1
@@ -879,7 +878,7 @@ MonoBehaviour:
     replaceTowerPID: -1
     replaceAbilityPID: -1
     applyToAll: 0
-    towerPIDList: 000000000100000002000000
+    towerPIDList: 000000000100000002000000i
     abilityPIDList: 
     perkPIDList: 
     effectPIDList: 
@@ -993,7 +992,7 @@ MonoBehaviour:
     minLevel: 0
     minWave: 0
     minPerkCount: 0
-    prereq: 06000000
+    prereq: 06000000i
     repeatable: 0
     effType: 1
     newTowerPID: -1
@@ -1001,7 +1000,7 @@ MonoBehaviour:
     replaceTowerPID: -1
     replaceAbilityPID: -1
     applyToAll: 0
-    towerPIDList: 06000000
+    towerPIDList: 06000000i
     abilityPIDList: 
     perkPIDList: 
     effectPIDList: 
@@ -1238,7 +1237,7 @@ MonoBehaviour:
     minLevel: 0
     minWave: 2
     minPerkCount: 0
-    prereq: 09000000
+    prereq: 09000000i
     repeatable: 0
     effType: 0
     newTowerPID: -1
@@ -1361,7 +1360,7 @@ MonoBehaviour:
     minLevel: 0
     minWave: 3
     minPerkCount: 0
-    prereq: 0a000000
+    prereq: 0a000000i
     repeatable: 0
     effType: 0
     newTowerPID: -1
@@ -1484,7 +1483,7 @@ MonoBehaviour:
     minLevel: 0
     minWave: 0
     minPerkCount: 0
-    prereq: 09000000
+    prereq: 09000000i
     repeatable: 0
     effType: 0
     newTowerPID: -1
@@ -1604,7 +1603,7 @@ MonoBehaviour:
     minLevel: 0
     minWave: 5
     minPerkCount: 0
-    prereq: 0b000000
+    prereq: 0b000000i
     repeatable: 0
     effType: 0
     newTowerPID: -1
@@ -1733,7 +1732,7 @@ MonoBehaviour:
     replaceAbilityPID: -1
     applyToAll: 0
     towerPIDList: 
-    abilityPIDList: 01000000
+    abilityPIDList: 01000000i
     perkPIDList: 
     effectPIDList: 
     effect:
@@ -1844,7 +1843,7 @@ MonoBehaviour:
     minLevel: 0
     minWave: 0
     minPerkCount: 0
-    prereq: 0d000000
+    prereq: 0d000000i
     repeatable: 0
     effType: 0
     newTowerPID: -1
@@ -1853,7 +1852,7 @@ MonoBehaviour:
     replaceAbilityPID: -1
     applyToAll: 0
     towerPIDList: 
-    abilityPIDList: 01000000
+    abilityPIDList: 01000000i
     perkPIDList: 
     effectPIDList: 
     effect:
@@ -2084,7 +2083,7 @@ MonoBehaviour:
     minLevel: 0
     minWave: 2
     minPerkCount: 0
-    prereq: 0f000000
+    prereq: 0f000000i
     repeatable: 0
     effType: 0
     newTowerPID: -1
@@ -2325,7 +2324,7 @@ MonoBehaviour:
     minLevel: 0
     minWave: 0
     minPerkCount: 0
-    prereq: 11000000
+    prereq: 11000000i
     repeatable: 0
     effType: 0
     newTowerPID: -1
@@ -2452,7 +2451,7 @@ MonoBehaviour:
     replaceTowerPID: -1
     replaceAbilityPID: -1
     applyToAll: 1
-    towerPIDList: 03000000
+    towerPIDList: 03000000i
     abilityPIDList: 
     perkPIDList: 
     effectPIDList: 
@@ -2543,7 +2542,7 @@ MonoBehaviour:
     gain: 0
     gainList: []
     unlockAllUpgrade: 0
-    towerUpgradeList: 00000000
+    towerUpgradeList: 00000000i
     status: 0
     purchasedCount: 0
   - prefabID: 20
@@ -2563,7 +2562,7 @@ MonoBehaviour:
     minLevel: 0
     minWave: 0
     minPerkCount: 0
-    prereq: 13000000
+    prereq: 13000000i
     repeatable: 0
     effType: 1
     newTowerPID: -1
@@ -2571,7 +2570,7 @@ MonoBehaviour:
     replaceTowerPID: -1
     replaceAbilityPID: -1
     applyToAll: 1
-    towerPIDList: 03000000
+    towerPIDList: 03000000i
     abilityPIDList: 
     perkPIDList: 
     effectPIDList: 
@@ -2662,7 +2661,7 @@ MonoBehaviour:
     gain: 0
     gainList: []
     unlockAllUpgrade: 0
-    towerUpgradeList: 01000000
+    towerUpgradeList: 01000000i
     status: 0
     purchasedCount: 0
   copiedFromOldDB: 0

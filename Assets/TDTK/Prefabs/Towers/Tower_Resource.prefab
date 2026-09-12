@@ -420,14 +420,16 @@ MonoBehaviour:
   - editTurret: 0
     editAOE: 0
     editMine: 0
-    buildDuration: 1.5
+    buildDuration: 0
     sellDuration: 0.5
     expToNextUpgrade: 10
     cost:
     - 30
     - 0
+    - 0
     sellValue:
     - 30
+    - 0
     - 0
     hp: 10
     sh: 0
@@ -478,6 +480,7 @@ MonoBehaviour:
     cooldown_Rsc: 1
     rscGain:
     - 1
+    - 0
     - 0
   effectImmunityList: 
   attackTargetList: []
@@ -717,6 +720,7 @@ MonoBehaviour:
   soundSold: {fileID: 0}
   soundDestroyed: {fileID: 0}
   radius: 0.5
+  sizeMultiplier: 2
   supportTgtList: []
   supportSrcList: []
   buildPlatform: {fileID: 0}

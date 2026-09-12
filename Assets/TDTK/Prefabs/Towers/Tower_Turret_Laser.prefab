@@ -345,7 +345,7 @@ MonoBehaviour:
   - editTurret: 1
     editAOE: 0
     editMine: 0
-    buildDuration: 1.5
+    buildDuration: 0
     sellDuration: 0.5
     expToNextUpgrade: 10
     cost:
@@ -645,6 +645,7 @@ MonoBehaviour:
   soundSold: {fileID: 0}
   soundDestroyed: {fileID: 0}
   radius: 0.5
+  sizeMultiplier: 2
   supportTgtList: []
   supportSrcList: []
   buildPlatform: {fileID: 0}

@@ -479,6 +479,7 @@ MonoBehaviour:
   soundSpawn: {fileID: 0}
   soundDestroyed: {fileID: 0}
   soundDestination: {fileID: 0}
+  sizeMultiplier: 2
   supportTgtList: []
   supportSrcList: []
   reverse: 0

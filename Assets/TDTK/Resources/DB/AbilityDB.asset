@@ -61,7 +61,7 @@ MonoBehaviour:
       critMultiplier: 0
       effectOnHitChance: 1
       overrideExistingEffect: 0
-      effectOnHitIDList: 05000000
+      effectOnHitIDList: 05000000i
       hit_AOE: 1
       damageMin_AOE: 2
       damageMax_AOE: 2
@@ -145,7 +145,7 @@ MonoBehaviour:
       critMultiplier: 0
       effectOnHitChance: 0
       overrideExistingEffect: 0
-      effectOnHitIDList: 08000000
+      effectOnHitIDList: 08000000i
       hit_AOE: 1
       damageMin_AOE: 2
       damageMax_AOE: 2
@@ -231,7 +231,7 @@ MonoBehaviour:
       critMultiplier: 0
       effectOnHitChance: 1
       overrideExistingEffect: 0
-      effectOnHitIDList: 02000000
+      effectOnHitIDList: 02000000i
       hit_AOE: 1
       damageMin_AOE: 2
       damageMax_AOE: 2
@@ -403,7 +403,7 @@ MonoBehaviour:
       critMultiplier: 0
       effectOnHitChance: 1
       overrideExistingEffect: 0
-      effectOnHitIDList: 08000000
+      effectOnHitIDList: 08000000i
       hit_AOE: 1
       damageMin_AOE: 2
       damageMax_AOE: 2
