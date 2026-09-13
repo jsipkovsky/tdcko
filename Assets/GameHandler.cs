@@ -7,7 +7,6 @@ using UnityEngine.UI;
 
 public class GameHandler : MonoBehaviour
 {
-    public Transform circle0;
     public Transform circle1;
     public Transform circle2;
 
@@ -19,9 +18,6 @@ public class GameHandler : MonoBehaviour
     public static bool IsMovingSmall;
 
     private float cachedTimeScale = 1;
-
-    public static int countOuter;
-    public static int countInner;
 
     public static string txt;
 
@@ -102,9 +98,10 @@ public class GameHandler : MonoBehaviour
     {
         var tm = TurnManager.GetInstance();
 
-        if (outerBtn != null) outerBtn.interactable = tm != null && tm.CanRotateRing(0) && !IsMovingOuter && countOuter == 0;
-        if (innerBtn != null) innerBtn.interactable = tm != null && tm.CanRotateRing(1) && !IsMovingInner && countInner == 0;
-        if (smallBtn != null) smallBtn.interactable = tm != null && tm.CanRotateRing(2) && !IsMovingSmall && countInner == 0;
+        // rotation is allowed even with creeps on the ring; they get carried around during the spin
+        if (outerBtn != null) outerBtn.interactable = tm != null && tm.CanRotateRing(0) && !IsMovingOuter;
+        if (innerBtn != null) innerBtn.interactable = tm != null && tm.CanRotateRing(1) && !IsMovingInner;
+        if (smallBtn != null) smallBtn.interactable = tm != null && tm.CanRotateRing(2) && !IsMovingSmall;
 
         if (revertBtn != null)
         {
@@ -124,47 +121,6 @@ public class GameHandler : MonoBehaviour
         {
             Time.timeScale = cachedTimeScale;
         }
-    }
-
-    public static void CheckMovePos(int level, int change)
-    {
-        if(level == 0)
-        {
-            countOuter += change;
-            if(countOuter == 0 && !IsMovingOuter)
-            {
-                GameObject.Find("OuterRotate").GetComponent<Button>().interactable = true;
-            } 
-            else
-            {
-                GameObject.Find("OuterRotate").GetComponent<Button>().interactable = false;
-            }
-        }
-        else if (level == 1)
-        {
-            countInner += change;
-            if (countInner == 0 && !IsMovingInner)
-            {
-                GameObject.Find("InnerRotate").GetComponent<Button>().interactable = true;
-            }
-            else
-            {
-                GameObject.Find("InnerRotate").GetComponent<Button>().interactable = false;
-            }
-        }
-        else if (level == 2)
-        {
-            countInner += change;
-            if (countInner == 0 && !IsMovingSmall)
-            {
-                GameObject.Find("SmallRotate").GetComponent<Button>().interactable = true;
-            }
-            else
-            {
-                GameObject.Find("SmallRotate").GetComponent<Button>().interactable = false;
-            }
-        }
-        // GameObject.Find("Testtest").GetComponentInChildren<Text>().text = countOuter + "/" + countInner;
     }
 
     public async void RotateLayer(int layer)
@@ -198,26 +154,31 @@ public class GameHandler : MonoBehaviour
     // shared rotation for all rings; revert=true spins back by the same angle
     private async Task<bool> DoRotate(int layer, bool revert)
     {
-        Transform circle; string p1n, p2n; float mag; int level;
+        Transform circle; string p1n, p2n; float mag;
         switch (layer)
         {
-            case 0: circle = circle0; p1n = "Path1C12"; p2n = "Path1C27"; mag = 120f; level = 0; break;
-            case 1: circle = circle1; p1n = "Path2C4"; p2n = "Path2C19"; mag = 120f; level = 1; break;
-            default: circle = circle2; p1n = "Path3C12"; p2n = "Path3C27"; mag = 180f; level = 2; break;
+            // outer ring platforms live under an unscaled pivot (CylinderOuter has non-uniform scale and would distort them)
+            case 0: circle = GameObject.Find("OuterRingPivot").transform; p1n = "Path1C12"; p2n = "Path1C27"; mag = 120f; break;
+            case 1: circle = circle1; p1n = "Path2C4"; p2n = "Path2C19"; mag = 120f; break;
+            default: circle = circle2; p1n = "Path3C12"; p2n = "Path3C27"; mag = 180f; break;
         }
 
         if (IsLayerMoving(layer)) return false;
         SetLayerMoving(layer, true);
-        CheckMovePos(level, 0);
 
         var path1 = GameObject.Find(p1n).GetComponent<Path>();
         var path2 = GameObject.Find(p2n).GetComponent<Path>();
 
-        if (path1.GetComponentInChildren<UnitCreep>() != null ||
-            path2.GetComponentInChildren<UnitCreep>() != null)
+        // carry any creeps on this ring so they rotate along with it, then restore their parent afterwards.
+        // detach to the scene root (uniform) and spin them via RotateAround so a scaled ring never distorts them
+        var ridingCreeps = new List<UnitCreep>();
+        ridingCreeps.AddRange(path1.GetComponentsInChildren<UnitCreep>());
+        ridingCreeps.AddRange(path2.GetComponentsInChildren<UnitCreep>());
+        var creepParents = new List<Transform>();
+        foreach (var c in ridingCreeps)
         {
-            SetLayerMoving(layer, false);
-            return false;
+            creepParents.Add(c.transform.parent);
+            c.transform.SetParent(null, true);
         }
 
         path1.gameObject.SetActive(false);
@@ -229,12 +190,18 @@ public class GameHandler : MonoBehaviour
         while (Mathf.Abs(rotated) < Mathf.Abs(total))
         {
             circle.Rotate(0, step, 0, Space.World);
+            foreach (var c in ridingCreeps) if (c != null) c.transform.RotateAround(Vector3.zero, Vector3.up, step);
             rotated += step;
             await Task.Delay(1);
         }
 
         path1.gameObject.SetActive(true);
         path2.gameObject.SetActive(true);
+
+        for (int i = 0; i < ridingCreeps.Count; i++)
+        {
+            if (ridingCreeps[i] != null) ridingCreeps[i].transform.SetParent(creepParents[i], true);
+        }
 
         var childs = circle.gameObject.GetComponentsInChildren<BuildPlatform>();
         for (int i = 0; i < childs.Length; i++)
@@ -247,7 +214,6 @@ public class GameHandler : MonoBehaviour
         await Task.Delay(500); //Task.Delay input is in milliseconds
 
         SetLayerMoving(layer, false);
-        CheckMovePos(level, 0);
         return true;
     }
 
