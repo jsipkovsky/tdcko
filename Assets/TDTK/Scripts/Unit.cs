@@ -1167,26 +1167,16 @@ namespace TDTK{
 				if(!allEffectList[i].IsMultiplier()){
 					activeEffectMod.ApplyModifier(allEffectList[i], DamageTable.GetModifier(GetArmorType(), allEffectList[i].stats.damageType));
 
-					for (int n = 0; n < activeEffectMod.stats.rscGain.Count; n++)
-						try
-						{
-							activeEffectMod.stats.rscGain[n] += allEffectList[i].stats.rscGain[n];
-						} catch(System.ArgumentOutOfRangeException ex)
-                        {
-							Debug.Log(ex.Message);
-                        }
+					// clamp to shortest list: effects may carry stale rscGain lists shorter than the accumulator
+					int modCount = Mathf.Min(activeEffectMod.stats.rscGain.Count, allEffectList[i].stats.rscGain.Count);
+					for (int n = 0; n < modCount; n++)
+						activeEffectMod.stats.rscGain[n] += allEffectList[i].stats.rscGain[n];
 				}
 				else{
 					activeEffectMul.ApplyMultiplier(allEffectList[i]);
-					try
-					{
-						for (int n=0; n<activeEffectMul.stats.rscGain.Count; n++) 
+					int mulCount = Mathf.Min(activeEffectMul.stats.rscGain.Count, allEffectList[i].stats.rscGain.Count);
+					for (int n = 0; n < mulCount; n++)
 						activeEffectMul.stats.rscGain[n] *= allEffectList[i].stats.rscGain[n];
-					}
-					catch (System.ArgumentOutOfRangeException ex)
-					{
-						Debug.Log(ex.Message);
-					}
 				}
 			}
 		}

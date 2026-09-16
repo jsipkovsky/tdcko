@@ -150,7 +150,7 @@ MonoBehaviour:
     effectOnHitIDList_Mine: 
     attackRange_Support: 2
     overrideExistingEffect_Support: 0
-    effectOnHitIDList_Support: 0500000000000000i
+    effectOnHitIDList_Support: 
     cooldown_Rsc: 1
     rscGain: []
   effectImmunityList: 
@@ -355,7 +355,7 @@ MonoBehaviour:
   creepType: 0
   isTurret: 0
   isAOE: 0
-  isSupport: 1
+  isSupport: 0
   isSpawner: 0
   waveIdx: 0
   path: {fileID: 0}

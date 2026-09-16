@@ -26,9 +26,16 @@ public class GameHandler : MonoBehaviour
     // which ring was rotated this turn, so revert knows what to reverse (-1 = none)
     private int lastRotatedLayer = -1;
 
+    // reused buffer so the per-frame hover raycast doesn't allocate
+    private readonly RaycastHit[] hoverHits = new RaycastHit[32];
+
     // Start is called before the first frame update
     void Start()
     {
+        // turn-based game: no need to render faster than this, keeps the GPU/CPU idle
+        Application.targetFrameRate = 60;
+        QualitySettings.vSyncCount = 0;
+
         outerBtn = FindButton("OuterRotate");
         innerBtn = FindButton("InnerRotate");
         smallBtn = FindButton("SmallRotate");
@@ -76,8 +83,10 @@ public class GameHandler : MonoBehaviour
             Ray ray = cam.ScreenPointToRay(Input.mousePosition);
             UnitCreep nearest = null;
             float best = Mathf.Infinity;
-            foreach (var h in Physics.RaycastAll(ray))
+            int count = Physics.RaycastNonAlloc(ray, hoverHits);
+            for (int i = 0; i < count; i++)
             {
+                var h = hoverHits[i];
                 var c = h.collider.GetComponentInParent<UnitCreep>();
                 if (c != null && !c.IsDestroyed() && h.distance < best) { best = h.distance; nearest = c; }
             }
