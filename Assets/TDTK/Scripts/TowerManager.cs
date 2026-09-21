@@ -312,6 +312,7 @@ namespace TDTK{
 		public UnitTower dndTower;	//dragNDropTower
 		private static float dndCooldown=0;
 		public static UnitTower CreateDragNDropTower(UnitTower prefab){
+			if(!TurnManager.IsPlanning()) return null;	//no building during the creep (resolution) turn
 			if(instance.dndTower!=null) Destroy(instance.dndTower.gameObject);
 			
 			//Debug.Log("CreateDragNDropTower");
@@ -458,6 +459,7 @@ namespace TDTK{
 		
 		
 		public static void BuildTower(UnitTower prefab, BuildPlatform platform, int nodeID, bool useRsc=true, bool isUpgrade=false, int typeID=-1){
+			if(!TurnManager.IsPlanning()) return;	//no building during the creep (resolution) turn
 			if(useRsc){
 				if(!RscManager.HasSufficientRsc(prefab.GetCost())){
 					Debug.Log("Insufficient resources");

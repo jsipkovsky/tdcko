@@ -65,8 +65,13 @@ namespace TDTK{
 		
 		public float overrideWaveSpacing=-1;
 		
+		// reference speed (ratkin) whose spacing defines the target physical gap; slower units get a
+		// proportionally longer release delay so every unit ends up the same distance apart
+		private const float SPACING_BASE_SPEED=5f;
+		
 		
 		private static SpawnManager instance;
+		
 		
 		void Awake(){
 			if(instance!=null && instance!=this){
@@ -218,6 +223,9 @@ namespace TDTK{
 					path=sub.path!=null ? sub.path : pathList[0];
 				for(int i=0; i<sub.spawnCount; i++){
 					UnitCreep creep=SpawnUnit(sub.prefab, wave.waveIdx, path, sub);
+					float spd=creep.GetSpeed();
+					float delayPerUnit=spd>0f ? (SPACING_BASE_SPEED*sub.spacing/3f)/spd : sub.spacing/3f;
+					creep.SetReleaseDelay(i*delayPerUnit);	//stagger units leaving the spawn point, normalized so slow units space out too
 					AddActiveUnit(creep);
 					wave.activeUnitCount+=1;
 				}
@@ -421,6 +429,20 @@ namespace TDTK{
 		
 		
 		public static bool OnFinalWave(){ return instance.currentWaveIdx>=instance.waveList.Count-1; }
+		
+		
+		// true if any not-yet-spawned wave still contains at least one spawnable (non-null) creep;
+		// used by the turn loop to keep running turns until the board clears instead of ending on the
+		// last configured wave (trailing empty/placeholder waves don't count as pending spawns)
+		public static bool HasPendingSpawns(){ return instance!=null && instance._HasPendingSpawns(); }
+		private bool _HasPendingSpawns(){
+			if(IsEndlessMode()) return true;
+			for(int i=currentWaveIdx+1; i<waveList.Count; i++){
+				List<SubWave> subs=waveList[i].subWaveList;
+				for(int s=0; s<subs.Count; s++) if(subs[s].prefab!=null) return true;
+			}
+			return false;
+		}
 		
 		
 		public SubWave._OverrideType overrideType=SubWave._OverrideType.Multiplier;

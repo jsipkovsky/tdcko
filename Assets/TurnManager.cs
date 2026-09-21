@@ -69,6 +69,11 @@ public class TurnManager : MonoBehaviour
             if (btnObj != null) endTurnButton = btnObj.GetComponent<Button>();
         }
         if (endTurnButton != null) endTurnButton.onClick.AddListener(EndTurn);
+
+        // create the modifier popup manager on the fly so no scene wiring is needed
+        if (ModifierManager.GetInstance() == null)
+            new GameObject("ModifierManager").AddComponent<ModifierManager>();
+
         StartCoroutine(BeginFirstTurn());
     }
 
@@ -88,8 +93,51 @@ public class TurnManager : MonoBehaviour
         if (ResolutionComplete())
         {
             if (GameControl.IsGameOver()) { phase = Phase.GameOver; return; }
+
+            // once the last wave is out there are no more planning turns: creeps just keep walking
+            // (continuous mode) until they all die or reach the end, with no End Turn button
+            if (!SpawnManager.HasPendingSpawns())
+            {
+                // end when the board is clear, or when every remaining creep is wedged at a dead-end
+                // (no ring rotation is available to clear it) so it can never progress or leak
+                if (!AnyCreepsRemain() || AllRemainingCreepsStuck())
+                {
+                    GameControl.EndGame();
+                    phase = Phase.GameOver;
+                    return;
+                }
+                PrepareCreepsForResolution();
+                return;
+            }
+
             BeginTurn();
         }
+    }
+
+    // true if any creep is still alive on the board
+    private static bool AnyCreepsRemain()
+    {
+        List<Unit> list = SpawnManager.GetActiveUnitList();
+        for (int i = 0; i < list.Count; i++)
+            if (list[i] != null && list[i].GetCreep() != null) return true;
+        return false;
+    }
+
+    // true when at least one creep remains and all remaining creeps are stuck at a dead-end;
+    // used as a continuous-mode fail-safe so a wedged board can't hang the game forever
+    private static bool AllRemainingCreepsStuck()
+    {
+        List<Unit> list = SpawnManager.GetActiveUnitList();
+        bool any = false;
+        for (int i = 0; i < list.Count; i++)
+        {
+            if (list[i] == null) continue;
+            UnitCreep creep = list[i].GetCreep();
+            if (creep == null) continue;
+            any = true;
+            if (!creep.IsStuckThisTurn()) return false;
+        }
+        return any;
     }
 
     // ----- Phase transitions -----
@@ -107,17 +155,43 @@ public class TurnManager : MonoBehaviour
 
         // show the End Turn button only while the player is planning
         if (endTurnButton != null) endTurnButton.gameObject.SetActive(true);
+
+        // every 3 waves (turns 4, 7, 10, ...) offer a modifier choice before the player acts
+        ModifierManager.OfferIfDue(turnNumber, this);
+    }
+
+    // hide/show the End Turn button (used while the modifier popup blocks planning)
+    public void SetEndTurnButtonVisible(bool visible)
+    {
+        if (endTurnButton != null) endTurnButton.gameObject.SetActive(visible);
     }
 
     // hooked to the "End Turn" button
     public void EndTurn()
     {
         if (phase != Phase.Planning) return;
+        // can't end the turn while the modifier choice popup is open
+        if (ModifierManager.IsBlocking()) return;
         // hide the button during the creep (resolution) turn
         if (endTurnButton != null) endTurnButton.gameObject.SetActive(false);
         LockPlanningActions();
         HideAllGhosts();
+        PrepareCreepsForResolution();
         phase = Phase.Resolution;
+    }
+
+    // give every creep a fresh travel budget for the turn about to resolve; done here (not lazily in
+    // creep movement) so ResolutionComplete never reads a stale parked flag when no new creeps spawned
+    private void PrepareCreepsForResolution()
+    {
+        List<Unit> list = SpawnManager.GetActiveUnitList();
+        for (int i = 0; i < list.Count; i++)
+        {
+            if (list[i] == null) continue;
+            UnitCreep creep = list[i].GetCreep();
+            if (creep == null) continue;
+            creep.BeginTurnMovement();
+        }
     }
 
     // ----- Economy -----

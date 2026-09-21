@@ -232,7 +232,7 @@ namespace TDTK{
 					SelectControl.SelectUnit(sInfo.GetTower());
 					UITowerSelect.Show(sInfo.GetTower());
 				}
-				else if(buildMode==_BuildMode.PointNBuild && sInfo.AvailableForBuild() && sInfo.buildableList.Count>0){
+				else if(buildMode==_BuildMode.PointNBuild && TurnManager.IsPlanning() && sInfo.AvailableForBuild() && sInfo.buildableList.Count>0){
 					build=true;
 					UIBuildButton.Show(sInfo);
 					SelectControl.SelectNode(sInfo.platform, sInfo.nodeID);

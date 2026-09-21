@@ -44,10 +44,20 @@ namespace TDTK{
 		public int subWpIdx=0;
 		
 		// turn-based movement budget (distance this creep may travel per turn)
-		private int observedTurn=-1;
 		private float distanceMovedThisTurn=0;
 		private bool parkedThisTurn=false;
 		public bool IsParkedThisTurn(){ return parkedThisTurn; }
+
+		// true when the creep parked because its path dead-ended (not because it spent its budget)
+		private bool stuckThisTurn=false;
+		public bool IsStuckThisTurn(){ return stuckThisTurn; }
+
+		// reset the per-turn travel budget; called by TurnManager when a turn commits to resolution
+		public void BeginTurnMovement(){ distanceMovedThisTurn=0; parkedThisTurn=false; stuckThisTurn=false; }
+
+		// seconds this creep waits before leaving the spawn point (staggers units in a sub-wave); consumed once
+		private float releaseDelay=0;
+		public void SetReleaseDelay(float value){ releaseDelay=Mathf.Max(0, value); }
 		
 		// preview simulation: NextWaypoint runs without side effects when true
 		private bool simulating=false;
@@ -429,14 +439,18 @@ namespace TDTK{
 			// creeps only advance during the resolution phase
 			if(!TurnManager.CanCreepsMove()){ AnimPlayMove(0); return; }
 			
-			// reset the travel budget when a new turn begins
-			if(observedTurn!=TurnManager.turnNumber){
-				observedTurn=TurnManager.turnNumber;
-				distanceMovedThisTurn=0;
-				parkedThisTurn=false;
-			}
-			
 			if(parkedThisTurn){ AnimPlayMove(0); return; }
+			
+			// hold at the spawn point for the initial release delay; the wait is charged against this
+			// turn's travel budget so the gap becomes physical spacing, then the delay is used up
+			if(releaseDelay>0){
+				float step=Mathf.Min(releaseDelay, deltaT);
+				releaseDelay-=step;
+				distanceMovedThisTurn+=GetSpeed()*step;
+				if(distanceMovedThisTurn>=TurnManager.GetCreepDistanceBudget(this)) parkedThisTurn=true;
+				AnimPlayMove(0);
+				return;
+			}
 			
 			if(!EnableBypass()){
 				//if(!reverse && !path.hasValidDestination)	Reverse();
@@ -449,9 +463,9 @@ namespace TDTK{
 			// dead-end this frame (e.g. a ring rotation left an empty/invalid subpath): park so the
 			// creep counts as done for the turn instead of stalling resolution and hiding End Turn
 			if(subPath.Count==0){ 
-				Debug.LogWarning("no subpath?"); parkedThisTurn=true; AnimPlayMove(0); return; 
+				Debug.LogWarning("no subpath?"); parkedThisTurn=true; stuckThisTurn=true; AnimPlayMove(0); return; 
 			}
-			if(subWpIdx>=subPath.Count){ Debug.LogWarning("subWpIdx exceed subpath length?"); subWpIdx=subPath.Count-1; parkedThisTurn=true; AnimPlayMove(0); return; }
+			if(subWpIdx>=subPath.Count){ Debug.LogWarning("subWpIdx exceed subpath length?"); subWpIdx=subPath.Count-1; parkedThisTurn=true; stuckThisTurn=true; AnimPlayMove(0); return; }
 			
 			//subPath=path.GetWP(wpIdx, EnableBypass());	//enable this to get the creep to update wp every frame (for moving wp), doesnt work for platform
 			targetPos=subPath[subWpIdx]+pathOffsetV;
@@ -511,7 +525,8 @@ namespace TDTK{
 			// fall back to the current position if the traversal throws (e.g. malformed path data)
 			Vector3 result=sPos;
 			try{
-				float remaining=TurnManager.GetCreepDistanceBudget(this);
+				float remaining=TurnManager.GetCreepDistanceBudget(this) - GetSpeed()*releaseDelay;
+				if(remaining<0) remaining=0;
 				int safety=10000;
 				while(remaining>0.0001f && !simReachedDest && !reverse && safety-->0){
 					if(subPath==null || subPath.Count==0) break;
