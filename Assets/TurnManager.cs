@@ -15,6 +15,10 @@ public class TurnManager : MonoBehaviour
     public static Phase phase = Phase.Planning;
     public static int turnNumber = 0;
 
+    // set once the final wave is out: creeps then move with no per-turn budget so their walk to the
+    // end is one smooth run instead of stopping and resuming in secondsPerTurn-long segments
+    public static bool continuous = false;
+
     [Header("Economy")]
     // gold granted at the start of each planning turn; default used when no per-turn override is set
     public int defaultIncomePerTurn = 20;
@@ -41,9 +45,11 @@ public class TurnManager : MonoBehaviour
     // gate checked by creep movement; creeps only advance during resolution
     public static bool CanCreepsMove() { return phase == Phase.Resolution; }
 
-    // distance a creep may travel this turn, derived from its current speed
+    // distance a creep may travel this turn, derived from its current speed;
+    // in continuous mode the budget is unbounded so creeps never park mid-walk
     public static float GetCreepDistanceBudget(UnitCreep creep)
     {
+        if (continuous) return float.PositiveInfinity;
         float seconds = instance != null ? instance.secondsPerTurn : 2f;
         return creep.GetSpeed() * seconds;
     }
@@ -63,6 +69,7 @@ public class TurnManager : MonoBehaviour
     void Start()
     {
         turnNumber = 0;
+        continuous = false;
         if (endTurnButton == null)
         {
             GameObject btnObj = GameObject.Find("EndTurnButton");
@@ -106,6 +113,8 @@ public class TurnManager : MonoBehaviour
                     phase = Phase.GameOver;
                     return;
                 }
+                // hand out an unlimited budget from here on so the remaining walk is one smooth run
+                continuous = true;
                 PrepareCreepsForResolution();
                 return;
             }

@@ -505,6 +505,8 @@ namespace TDTK{
 		public Vector3 SimulateTurnDestination(){
 			if(path==null || subPath==null || subPath.Count==0) return thisT.position;
 			if(reverse) return thisT.position;
+			// no bounded stop point exists once the budget is unlimited; skip the preview
+			if(TurnManager.continuous) return thisT.position;
 			
 			Path sPath=path;
 			int sWp=wpIdx, sSub=subWpIdx;
