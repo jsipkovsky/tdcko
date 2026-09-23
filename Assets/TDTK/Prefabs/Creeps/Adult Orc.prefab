@@ -105,7 +105,7 @@ MonoBehaviour:
     expToNextUpgrade: 10
     cost: []
     sellValue: []
-    hp: 50
+    hp: 90
     sh: 0
     shRegen: 0.5
     shStagger: 3
@@ -373,7 +373,7 @@ MonoBehaviour:
   lifeGainedOnDestroyed: 0
   expGainOnDestroyed: 0
   rscGainOnDestroyed: 020000000000000000000000i
-  lifeLostOnDestination: 1
+  lifeLostOnDestination: 2
   effectSpawn:
     obj: {fileID: 0}
     autoDestroy: 1

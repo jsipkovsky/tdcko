@@ -147,8 +147,8 @@ MonoBehaviour:
   unitName: Balista tower
   icon: {fileID: 21300004, guid: c1bf8f531a58e5a43a7677bc162c964a, type: 3}
   desp: Deal damage over time. Ideal for fast moving unit.
-  canBeAttacked: 1
-  canBeTargeted: 1
+  canBeAttacked: 0
+  canBeTargeted: 0
   unitRadius: 0.25
   targetPoint: {fileID: 4838034169871230}
   hp: 10
@@ -167,7 +167,7 @@ MonoBehaviour:
     sellDuration: 0.5
     expToNextUpgrade: 10
     cost:
-    - 50
+    - 40
     - 0
     - 0
     sellValue:
@@ -187,8 +187,8 @@ MonoBehaviour:
     dmgReduc: 0
     critReduc: 0
     hit: 1
-    damageMin: 25
-    damageMax: 25
+    damageMin: 80
+    damageMax: 80
     attackRange: 5
     aoeRange: 1.5
     cooldown: 5

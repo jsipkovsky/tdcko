@@ -116,8 +116,8 @@ MonoBehaviour:
   unitName: Soul-sucking tower
   icon: {fileID: 21300008, guid: c1bf8f531a58e5a43a7677bc162c964a, type: 3}
   desp: A standard cannon turret with decent damage and range. Deal aoe damage.
-  canBeAttacked: 1
-  canBeTargeted: 1
+  canBeAttacked: 0
+  canBeTargeted: 0
   unitRadius: 0.25
   targetPoint: {fileID: 0}
   hp: 10

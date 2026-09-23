@@ -118,8 +118,8 @@ MonoBehaviour:
   unitName: Blade tower
   icon: {fileID: 21300000, guid: c1bf8f531a58e5a43a7677bc162c964a, type: 3}
   desp: A standard cannon turret with decent damage and range. Deal aoe damage.
-  canBeAttacked: 1
-  canBeTargeted: 1
+  canBeAttacked: 0
+  canBeTargeted: 0
   unitRadius: 0.25
   targetPoint: {fileID: 4113172471181260}
   hp: 10
@@ -132,7 +132,7 @@ MonoBehaviour:
   level: 0
   statsList:
   - editTurret: 1
-    editAOE: 0
+    editAOE: 1
     editMine: 1
     buildDuration: 0
     sellDuration: 0.5
@@ -160,8 +160,8 @@ MonoBehaviour:
     hit: 1
     damageMin: 5
     damageMax: 5
-    attackRange: 2
-    aoeRange: 2
+    attackRange: 3
+    aoeRange: 0
     cooldown: 1
     critChance: 0
     critMultiplier: 0
@@ -169,9 +169,9 @@ MonoBehaviour:
     overrideExistingEffect: 0
     effectOnHitIDList: 06000000i
     hit_AOE: 1
-    damageMin_AOE: 2
-    damageMax_AOE: 2
-    attackRange_AOE: 2
+    damageMin_AOE: 5
+    damageMax_AOE: 5
+    attackRange_AOE: 3
     cooldown_AOE: 1
     critChance_AOE: 0
     critMultiplier_AOE: 0
@@ -221,7 +221,7 @@ MonoBehaviour:
   aimSpeed: 20
   aimed: 0
   targetMode: 0
-  targetCountPerAttack: 1
+  targetCountPerAttack: 10
   useLOSTargeting: 0
   targetingFov: 0
   targetingDir: 0

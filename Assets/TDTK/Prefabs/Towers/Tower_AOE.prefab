@@ -116,8 +116,8 @@ MonoBehaviour:
   unitName: Sniper tower
   icon: {fileID: 21300006, guid: c1bf8f531a58e5a43a7677bc162c964a, type: 3}
   desp: A tower that slow down all hostile within range
-  canBeAttacked: 1
-  canBeTargeted: 1
+  canBeAttacked: 0
+  canBeTargeted: 0
   unitRadius: 0.25
   targetPoint: {fileID: 4271895405149020}
   hp: 10
@@ -156,8 +156,8 @@ MonoBehaviour:
     dmgReduc: 0
     critReduc: 0
     hit: 1
-    damageMin: 100
-    damageMax: 100
+    damageMin: 200
+    damageMax: 200
     attackRange: 55
     aoeRange: 0
     cooldown: 10

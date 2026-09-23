@@ -74,7 +74,7 @@ MonoBehaviour:
     expToNextUpgrade: 10
     cost: []
     sellValue: []
-    hp: 20
+    hp: 30
     sh: 0
     shRegen: 0.5
     shStagger: 3

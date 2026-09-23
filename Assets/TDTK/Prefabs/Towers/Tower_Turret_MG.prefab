@@ -149,8 +149,8 @@ MonoBehaviour:
   unitName: Spear tower
   icon: {fileID: 21300002, guid: c1bf8f531a58e5a43a7677bc162c964a, type: 3}
   desp: A single target tower with chance to deal critical damage with each attack.
-  canBeAttacked: 1
-  canBeTargeted: 1
+  canBeAttacked: 0
+  canBeTargeted: 0
   unitRadius: 0.25
   targetPoint: {fileID: 4563459436706890}
   hp: 10
@@ -176,7 +176,7 @@ MonoBehaviour:
     - 10
     - 0
     - 0
-    hp: 10
+    hp: 999
     sh: 0
     shRegen: 0
     shStagger: 0
@@ -189,9 +189,9 @@ MonoBehaviour:
     dmgReduc: 0
     critReduc: 0
     hit: 1
-    damageMin: 10
-    damageMax: 10
-    attackRange: 15
+    damageMin: 30
+    damageMax: 30
+    attackRange: 5
     aoeRange: 0
     cooldown: 2
     critChance: 0

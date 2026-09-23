@@ -105,7 +105,7 @@ MonoBehaviour:
     expToNextUpgrade: 10
     cost: []
     sellValue: []
-    hp: 25
+    hp: 65
     sh: 0
     shRegen: 0.5
     shStagger: 3
@@ -113,7 +113,7 @@ MonoBehaviour:
     shRate: 0
     armorType: 2
     damageType: 0
-    speed: 3
+    speed: 4
     dodge: 0.2
     dmgReduc: 0
     critReduc: 0
