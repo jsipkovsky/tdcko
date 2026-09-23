@@ -5502,7 +5502,7 @@ MonoBehaviour:
   showGizmo: 1
   gizmoColor: {r: 0, g: 0, b: 1, a: 1}
   connectorPoints: 
-  nextPathP: 
+  nextPathP: 0100000010000000i
 --- !u!4 &234236153
 Transform:
   m_ObjectHideFlags: 0
