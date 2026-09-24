@@ -35,6 +35,14 @@ namespace TDTK{
 		public virtual void Destroyed(bool spawnEffDestroyed=true, bool destroyedByAttack=true){ }
 		
 		
+		//hooks for the tower upgrade system (overridden by UnitTower); no-ops for creeps
+		public virtual float GetUpgradeCooldownFactor(){ return 1f; }
+		public virtual bool IsUpgradeAttackBlocked(){ return false; }
+		public virtual void OnUpgradeAttack(List<Unit> targets){ }
+		public virtual void OnUpgradeKill(Unit victim){ }
+		public virtual void OnUpgradeSurvivedHit(Unit victim){ }
+		
+		
 		
 		public virtual bool IsTurret(){ return false; }
 		public virtual bool IsAOE(){ return false; }
@@ -325,6 +333,9 @@ namespace TDTK{
 		
 		//Credit to Nameless Game for contributing the code for targeting multiple target
 		public void ScanForTarget(){
+			//Ballista "Spare material" can raise the number of simultaneous targets for towers
+			int effTargetCount=targetCountPerAttack + (IsTower() ? UpgradeState.TargetCountMod(prefabID) : 0);
+			
 			for(int i=0; i<attackTargetList.Count; i++){
 				bool removeTarget=false;
 				
@@ -344,7 +355,7 @@ namespace TDTK{
 				}
 			}
 			
-			if(attackTargetList.Count>=targetCountPerAttack) return;
+			if(attackTargetList.Count>=effTargetCount) return;
 			
 			if(CreepIsOnAttackCD()) return;	//for creep only
 			
@@ -377,7 +388,10 @@ namespace TDTK{
 			
 			if(IsCreep() && targetMode==_TargetMode.NearestToDestination) targetMode=_TargetMode.Random;
 			
-			int requiredTargetCount=targetCountPerAttack-attackTargetList.Count;
+			//Sniper "Shot in the dark" may override the preferred targeting mode with Random
+			_TargetMode curMode = (IsTower()) ? UpgradeState.OverrideTargetMode(this, targetMode) : targetMode;
+			
+			int requiredTargetCount=effTargetCount-attackTargetList.Count;
 			int tmpTargetIdx=-1;
 			List<int> newTargetsIdx = new List<int>();
 			
@@ -386,7 +400,7 @@ namespace TDTK{
 					newTargetsIdx.Add(i);
 				}
 			}
-			else if (targetMode == _TargetMode.Random) {
+			else if (curMode == _TargetMode.Random) {
 				for (int i = 0; i < requiredTargetCount; i++) {
 					do {
 						tmpTargetIdx = Random.Range(0, unitList.Count);
@@ -394,7 +408,7 @@ namespace TDTK{
 					newTargetsIdx.Add(tmpTargetIdx);
 				}
 			}
-			else if (targetMode == _TargetMode.NearestToSelf) {
+			else if (curMode == _TargetMode.NearestToSelf) {
 				for (int i = 0; i < requiredTargetCount; i++) {
 					float nearest = Mathf.Infinity;
 					for (int j = 0; j < unitList.Count; j++) {
@@ -405,7 +419,7 @@ namespace TDTK{
 					newTargetsIdx.Add(tmpTargetIdx);
 				}
 			}
-			else if (targetMode == _TargetMode.MostHP) {
+			else if (curMode == _TargetMode.MostHP) {
 				for (int i = 0; i < requiredTargetCount; i++) {
 					float mostHP = 0;
 					for (int j = 0; j < unitList.Count; j++) {
@@ -415,7 +429,7 @@ namespace TDTK{
 					newTargetsIdx.Add(tmpTargetIdx);
 				}
 			}
-			else if (targetMode == _TargetMode.LeastHP) {
+			else if (curMode == _TargetMode.LeastHP) {
 				for (int i = 0; i < requiredTargetCount; i++) {
 					float leastHP = Mathf.Infinity;
 					for (int j = 0; j < unitList.Count; j++) {
@@ -425,7 +439,7 @@ namespace TDTK{
 					newTargetsIdx.Add(tmpTargetIdx);
 				}
 			}
-			else if (targetMode == _TargetMode.NearestToDestination) {
+			else if (curMode == _TargetMode.NearestToDestination) {
 				for (int i = 0; i < requiredTargetCount; i++) {
 					float pathDist = Mathf.Infinity; int furthestWP = 0; int furthestSubWP = 0; float distToDest = Mathf.Infinity;
 					for (int j = 0; j < unitList.Count; j++) {
@@ -584,6 +598,9 @@ namespace TDTK{
 			//if(cooldownAttack>0) return;
 			if(cooldown>0) return;
 			
+			//Blade "Tough shift": forced recovery window blocks attacking
+			if(IsUpgradeAttackBlocked()) return;
+			
 			if(resetTargetOnAttack && !targetReset){
 				targetReset=true;
 				ClearTarget();
@@ -598,6 +615,8 @@ namespace TDTK{
 			
 			for(int i=0; i<attackTargetList.Count; i++) StartCoroutine(Shoot(attackTargetList[i]));
 			//StartCoroutine(Shoot(new AttackInfo(this, GetTarget(), 0)));
+			
+			if(IsTower()) OnUpgradeAttack(attackTargetList);
 			
 			CreepAttackCount();
 		}
@@ -644,7 +663,9 @@ namespace TDTK{
 					List<Unit> tgtList=SpawnManager.GetUnitsWithinRange(this, aInfo.aoeRange);
 					for(int i=0; i<tgtList.Count; i++){
 						if(tgtList[i]==this) continue;
-						tgtList[i].ApplyAttack(new AttackInfo(aInfo.srcUnit, tgtList[i], 0, false));
+						AttackInfo splash=new AttackInfo(aInfo.srcUnit, tgtList[i], 0, false);
+						splash.isSubAttack=true;
+						tgtList[i].ApplyAttack(splash);
 					}
 				}
 			}
@@ -673,9 +694,29 @@ namespace TDTK{
 				}
 				else TDTK.TextOverlay("missed", GetTargetPoint());
 				
+				//Spear "Sharpest tool": a landed primary hit chains to nearby units (non-recursive)
+				if(aInfo.hit && !aInfo.isSubAttack && UpgradeState.SpearChains(aInfo.srcUnit)){
+					List<Unit> chainList=SpawnManager.GetUnitsWithinRange(this, UpgradeState.ChainRange);
+					int chained=0;
+					for(int i=0; i<chainList.Count && chained<UpgradeState.ChainCount; i++){
+						if(chainList[i]==this || chainList[i]==null) continue;
+						AttackInfo cInfo=new AttackInfo(aInfo.srcUnit, chainList[i], 0, false);
+						cInfo.isSubAttack=true;
+						chainList[i].ApplyAttack(cInfo);
+						chained++;
+					}
+				}
+				
 				if(hp<=0){
+					//kill-based upgrades only trigger on the primary hit (SST killing spree, Sniper all or nothing)
+					if(aInfo.hit && !aInfo.isSubAttack && aInfo.srcUnit!=null) aInfo.srcUnit.OnUpgradeKill(this);
 					Destroyed();
 					return;
+				}
+				else if(aInfo.hit && !aInfo.isSubAttack && aInfo.srcUnit!=null){
+					aInfo.srcUnit.OnUpgradeSurvivedHit(this);
+					//Ballista "Flaming shots": non-lethal hits set the target on fire
+					if(UpgradeState.BalistaFlaming(aInfo.srcUnit)) ApplyEffect(UpgradeState.MakeBurnEffect(aInfo.srcUnit, 2f, 3f));
 				}
 			}
 			else if(aInfo.damage<0){
@@ -746,11 +787,11 @@ namespace TDTK{
 		
 		public float GetSpeed(){ 		return (statsList[level].speed + GetModSpeed()) * GetMulSpeed() * GetCreepSpeedMul();  }
 		
-		public float GetDamageMin(){ 	return (statsList[level].damageMin + GetModDmgMin()) * GetMulDmgMin(); }
-		public float GetDamageMax(){ 	return (statsList[level].damageMax + GetModDmgMax()) * GetMulDmgMax(); }
-		public float GetAttackRange(){ return (statsList[level].attackRange + GetModAttackRange()) * GetMulAttackRange(); }
-		public float GetAOERange(){ 	return (statsList[level].aoeRange + GetModAOE()) * GetMulAOE(); }
-		public float GetCooldown(){ 	return (statsList[level].cooldown + GetModCD()) * GetMulCD(); }
+		public float GetDamageMin(){ 	return (statsList[level].damageMin + GetModDmgMin() + UpgradeState.DmgMod(prefabID)) * GetMulDmgMin() * UpgradeState.DmgMul(prefabID); }
+		public float GetDamageMax(){ 	return (statsList[level].damageMax + GetModDmgMax() + UpgradeState.DmgMod(prefabID)) * GetMulDmgMax() * UpgradeState.DmgMul(prefabID); }
+		public float GetAttackRange(){ return (statsList[level].attackRange + GetModAttackRange()) * GetMulAttackRange() * UpgradeState.RangeMul(prefabID); }
+		public float GetAOERange(){ 	return (statsList[level].aoeRange + GetModAOE() + UpgradeState.AoeMod(prefabID)) * GetMulAOE(); }
+		public float GetCooldown(){ 	return (statsList[level].cooldown + GetModCD() + UpgradeState.CooldownMod(prefabID)) * GetMulCD() * UpgradeState.CooldownMul(prefabID) * GetUpgradeCooldownFactor(); }
 		
 		public float GetHit(){ 				return (statsList[level].hit + GetModHit()) * GetMulHit(); }
 		public float GetCritChance(){ 	return (statsList[level].critChance + GetModCritChance()) * GetMulCritChance(); }

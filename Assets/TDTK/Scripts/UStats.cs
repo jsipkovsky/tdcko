@@ -516,6 +516,9 @@ namespace TDTK{
 		public bool hit=false;
 		public bool critical=false;
 		
+		//set on derived attacks (aoe splash, spear chain) so upgrade procs (chain, kill/survive) don't cascade
+		public bool isSubAttack=false;
+		
 		public bool UseEffect(){ return effectList.Count!=0; }//effect!=null; }
 		
 		
