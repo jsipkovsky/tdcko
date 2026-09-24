@@ -73,6 +73,7 @@ namespace TDTK{
 		public List<int> towerCounterTypeID=new List<int>();	//tower prefabID used for towerCounterList
 		public List<int> towerCounterList=new List<int>();		//active tower count for each unique prefabID
 		public static bool CheckTowerCounterLimit(int typeID, int limit){
+			limit=UpgradeState.EffectiveBuildLimit(typeID, limit);
 			if(typeID<0 || limit<=0) return true;
 			int idx=instance.towerCounterTypeID.IndexOf(typeID);
 			if(idx>=0) return instance.towerCounterList[idx]<limit;

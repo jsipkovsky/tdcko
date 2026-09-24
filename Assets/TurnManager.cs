@@ -77,6 +77,9 @@ public class TurnManager : MonoBehaviour
         }
         if (endTurnButton != null) endTurnButton.onClick.AddListener(EndTurn);
 
+        // clear any upgrades picked in a previous play session (static state survives domain reloads)
+        UpgradeState.Reset();
+
         // create the modifier popup manager on the fly so no scene wiring is needed
         if (ModifierManager.GetInstance() == null)
             new GameObject("ModifierManager").AddComponent<ModifierManager>();
@@ -96,6 +99,9 @@ public class TurnManager : MonoBehaviour
     void Update()
     {
         if (phase != Phase.Resolution) return;
+
+        // drives time-based upgrade effects (e.g. Blade "Tough shift" recovery windows)
+        UpgradeState.ResolutionTime += Time.deltaTime;
 
         if (ResolutionComplete())
         {
@@ -183,9 +189,11 @@ public class TurnManager : MonoBehaviour
         if (ModifierManager.IsBlocking()) return;
         // hide the button during the creep (resolution) turn
         if (endTurnButton != null) endTurnButton.gameObject.SetActive(false);
+        UpgradeState.OnPlayerTurnEnd();
         LockPlanningActions();
         HideAllGhosts();
         PrepareCreepsForResolution();
+        UpgradeState.OnResolutionStart();
         phase = Phase.Resolution;
     }
 
@@ -207,7 +215,7 @@ public class TurnManager : MonoBehaviour
 
     private void GrantIncome()
     {
-        int amount = GetIncomeForTurn(turnNumber);
+        int amount = GetIncomeForTurn(turnNumber) + UpgradeState.IncomeBonus();
         if (amount == 0) return;
         RscManager.GainRsc(new List<int> { amount });
     }

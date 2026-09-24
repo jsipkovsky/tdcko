@@ -490,7 +490,14 @@ namespace TDTK{
 			//List<float> listMod=PerkManager.GetModUnitCost(prefabID);
 			//List<float> listMul=PerkManager.GetMulUnitCost(prefabID);
 			List<float> list=RscManager.ApplyModifier(new List<float>(statsList[lvl].cost), PerkManager.GetModUnitCost(prefabID));
-			return RscManager.ApplyMultiplier(list, PerkManager.GetMulUnitCost(prefabID));
+			list=RscManager.ApplyMultiplier(list, PerkManager.GetMulUnitCost(prefabID));
+			
+			//upgrade cost modifiers: Ballista "Cheap gears" (flat) and "Hasty investment" (this/next turn multiplier)
+			if(list.Count>0) list[0]=Mathf.Max(0, list[0]+UpgradeState.CostMod(prefabID));
+			float costMul=UpgradeState.GlobalCostMul();
+			if(costMul!=1f) for(int i=0; i<list.Count; i++) list[i]=Mathf.Max(0, list[i]*costMul);
+			
+			return list;
 			
 			//return RscManager.ApplyMultiplier(new List<float>( statsList[level].cost ), PerkManager.GetUnitCost(prefabID));
 		}
@@ -502,6 +509,64 @@ namespace TDTK{
 		public float GetBuildDuration(int lvl){ return (statsList[lvl].buildDuration+PerkManager.GetModUnitBuildDur(prefabID)) *  PerkManager.GetMulUnitBuildDur(prefabID); }
 		public float GetSellDuration(int lvl){ return (statsList[lvl].sellDuration+PerkManager.GetModUnitSellDur(prefabID)) *  PerkManager.GetMulUnitSellDur(prefabID); }
 		
+		
+		//---- tower upgrade runtime state ----
+		private int waitAndSeeCounter=0;		//Blade "Wait and see": attacks since last immobilize
+		private int sstKillsThisTurn=0;			//SST "Killing spree": kills accumulated this turn
+		private bool sstHadKillLastTurn=true;	//SST "Killing spree": whether a kill happened last turn
+		private bool sstPenaltyActive=false;	//SST "Killing spree": start-of-turn penalty flag
+		
+		//Blade "Tough shift": every 6s of the monster turn, block attacking for a 2s recovery window
+		public override bool IsUpgradeAttackBlocked(){
+			if(UpgradeState.BladeToughShift(this)){
+				if((UpgradeState.ResolutionTime % 6f) >= 4f) return true;
+			}
+			return false;
+		}
+		
+		//SST "Killing spree": faster per kill this turn, slower if it got no kill last turn
+		public override float GetUpgradeCooldownFactor(){
+			if(UpgradeState.SSTKillingSpree(this)){
+				float f=sstPenaltyActive ? 1.2f : 1f;
+				f/=(1f+0.05f*sstKillsThisTurn);
+				return f;
+			}
+			return 1f;
+		}
+		
+		//Blade "Wait and see": every 8th attack immobilizes everything it hit for 1s
+		public override void OnUpgradeAttack(List<Unit> targets){
+			if(UpgradeState.BladeImmobilizes(this)){
+				waitAndSeeCounter++;
+				if(waitAndSeeCounter>=8){
+					waitAndSeeCounter=0;
+					for(int i=0; i<targets.Count; i++){
+						if(targets[i]!=null && !targets[i].IsDestroyed())
+							targets[i].ApplyEffect(UpgradeState.MakeStunEffect(this, 1f));
+					}
+				}
+			}
+		}
+		
+		public override void OnUpgradeKill(Unit victim){
+			if(UpgradeState.SSTKillingSpree(this)){ sstKillsThisTurn++; sstHadKillLastTurn=true; }
+			if(UpgradeState.SniperAllOrNothing(this)) cooldown=0f;	//free follow-up shot
+		}
+		
+		public override void OnUpgradeSurvivedHit(Unit victim){
+			//Sniper "All or nothing": a non-lethal shot recovers 50% slower
+			if(UpgradeState.SniperAllOrNothing(this)) cooldown*=1.5f;
+		}
+		
+		//called by UpgradeState at the start of each monster turn to roll over per-turn state
+		public void UpgradeOnResolutionStart(){
+			waitAndSeeCounter=0;
+			if(UpgradeState.SSTKillingSpree(this)){
+				sstPenaltyActive=!sstHadKillLastTurn;
+				sstHadKillLastTurn=false;
+				sstKillsThisTurn=0;
+			}
+		}
 		
 		
 		public override void Destroyed(bool spawnEffDestroyed=true, bool destroyedByAttack=true){

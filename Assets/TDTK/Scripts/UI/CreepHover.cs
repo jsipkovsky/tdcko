@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace TDTK{
@@ -13,6 +14,9 @@ namespace TDTK{
 		private UnitTower hoveredTower;
 		private UnitCreep highlighted;
 		private GUIStyle boxStyle;
+		private GUIStyle hpStyle;
+
+		private static readonly Color CreepHPColor = new Color(1f, 0.6f, 0.6f);
 
 		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
 		static void Bootstrap(){
@@ -65,9 +69,40 @@ namespace TDTK{
 		}
 
 		void OnGUI(){
+			DrawUnitHPNumbers();
+
 			if(hovered!=null) DrawCreepBox(hovered);
 			else if(hoveredGhostCreep!=null) DrawCreepBox(hoveredGhostCreep);
 			else if(hoveredTower!=null) DrawTowerBox();
+		}
+
+		// small always-on HP number floating above every creep so the player can gauge unit strength
+		private void DrawUnitHPNumbers(){
+			Camera cam=Camera.main;
+			if(cam==null) return;
+
+			if(hpStyle==null){
+				hpStyle=new GUIStyle(GUI.skin.label);
+				hpStyle.alignment=TextAnchor.MiddleCenter;
+				hpStyle.fontStyle=FontStyle.Bold;
+			}
+
+			List<Unit> creeps=SpawnManager.GetActiveUnitList();
+			for(int i=0; i<creeps.Count; i++) DrawHPNumber(cam, creeps[i]);
+		}
+
+		private void DrawHPNumber(Camera cam, Unit unit){
+			if(unit==null || unit.IsDestroyed()) return;
+
+			Vector3 screenPos=cam.WorldToScreenPoint(unit.GetTargetPoint()+Vector3.up*0.4f);
+			if(screenPos.z<=0) return;	//behind the camera
+
+			hpStyle.normal.textColor=CreepHPColor;
+
+			float w=48, h=18;
+			float x=screenPos.x-w*0.5f;
+			float y=(Screen.height-screenPos.y)-h;
+			GUI.Label(new Rect(x, y, w, h), Mathf.CeilToInt(unit.GetHP()).ToString(), hpStyle);
 		}
 
 		private void EnsureStyle(){

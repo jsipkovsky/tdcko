@@ -12,6 +12,7 @@ public class ModifierDef
     public string title;
     public string description;
     public List<string> prerequisites;
+    public List<string> excludes = new List<string>();
     public System.Action apply;
 
     public ModifierDef(string id, string title, string description, System.Action apply, params string[] prereq)
@@ -21,6 +22,13 @@ public class ModifierDef
         this.description = description;
         this.apply = apply;
         prerequisites = new List<string>(prereq);
+    }
+
+    // fluent helper: mark modifiers that can't coexist with this one
+    public ModifierDef Excludes(params string[] ids)
+    {
+        excludes.AddRange(ids);
+        return this;
     }
 }
 
@@ -50,21 +58,63 @@ public class ModifierManager : MonoBehaviour
         BuildModifierList();
     }
 
-    // placeholder catalogue: every modifier just grants +1 gold; a few require an earlier pick
+    // the real upgrade catalogue; each pick registers itself with UpgradeState, which the rest of the
+    // game queries. Mostly flat (no prerequisites); a few require an earlier pick or exclude another.
     private void BuildModifierList()
     {
-        System.Action gold = () => RscManager.GainRsc(new List<int> { 1 });
+        Add("sharp_pencil", "Sharp as a pencil",
+            "+30% damage for Spear tower. (Excludes Big guns)").Excludes("big_guns");
 
-        allModifiers.Add(new ModifierDef("gold_a", "Gold Cache", "Gain +1 gold.", gold));
-        allModifiers.Add(new ModifierDef("gold_b", "Gold Vein", "Gain +1 gold.", gold));
-        allModifiers.Add(new ModifierDef("gold_c", "Gold Seam", "Gain +1 gold.", gold));
-        // extra base (no-prereq) picks so at least 3 options remain across every offer
-        allModifiers.Add(new ModifierDef("gold_g", "Gold Nugget", "Gain +1 gold.", gold));
-        allModifiers.Add(new ModifierDef("gold_h", "Gold Lode", "Gain +1 gold.", gold));
-        allModifiers.Add(new ModifierDef("gold_i", "Gold Reserve", "Gain +1 gold.", gold));
-        allModifiers.Add(new ModifierDef("gold_d", "Refined Cache", "Gain +1 gold. (needs Gold Cache)", gold, "gold_a"));
-        allModifiers.Add(new ModifierDef("gold_e", "Deep Vein", "Gain +1 gold. (needs Gold Vein)", gold, "gold_b"));
-        allModifiers.Add(new ModifierDef("gold_f", "Master Hoard", "Gain +1 gold. (needs Refined Cache)", gold, "gold_d"));
+        Add("wait_and_see", "Wait and see",
+            "Every 8th attack, Blade tower immobilizes all units it hits for 1 second.");
+
+        Add("cheap_gears", "Cheap gears",
+            "Ballista tower costs 10 less, but its cooldown increases by 1s.");
+
+        Add("shot_in_dark", "Shot in the dark",
+            "Sniper tower cooldown is halved, but it has a 70% chance to ignore its preferred targeting and attack a random enemy instead.");
+
+        Add("sandwich_investor", "Sandwich investor",
+            "Increases income by 10 each round.");
+
+        Add("once_is_enough", "Once is enough",
+            "SST can only be built once, but gains +4 attack.");
+
+        Add("sharpest_tool", "Sharpest tool in the shed",
+            "Spear tower attacks chain to 2 nearby units (within range 2). (Requires Sharp as a pencil)", "sharp_pencil");
+
+        Add("big_guns", "Big guns",
+            "Spear tower range is halved, damage is doubled, and gains 1.5 splash damage. (Excludes Sharp as a pencil)").Excludes("sharp_pencil");
+
+        Add("flaming_shots", "Flaming shots",
+            "Ballista shots set enemies on fire: burning units take 2 damage every second during the monster turn.");
+
+        Add("no_risk", "No risk no fun",
+            "Multiplies your current resources by 1.6 at the end of next turn.");
+
+        Add("tough_shift", "Tough shift",
+            "Blade tower attacks twice as fast, but must recover for 2s every 6s during the monster turn.");
+
+        Add("killing_spree", "Killing spree",
+            "SST attack speed increases 5% per kill during the turn (reset each turn). If it gets no kill in a turn, it starts the next turn with a 20% attack-speed penalty.");
+
+        Add("all_or_nothing", "All or nothing",
+            "If a Sniper shot kills a unit, it fires another free shot. If it fails to kill, its recovery is 50% slower.");
+
+        Add("hasty_investment", "Hasty investment",
+            "Towers are 20% cheaper this turn, but 25% more expensive next turn.");
+
+        Add("spare_material", "Spare material",
+            "Ballista tower attacks two targets per attack. (Requires Cheap gears)", "cheap_gears");
+    }
+
+    // register a modifier whose effect is simply activating its id in UpgradeState
+    private ModifierDef Add(string id, string title, string description, params string[] prereq)
+    {
+        string capturedId = id;
+        ModifierDef def = new ModifierDef(id, title, description, () => UpgradeState.Activate(capturedId), prereq);
+        allModifiers.Add(def);
+        return def;
     }
 
     // offer on turns 4, 7, 10, ... (i.e. at the start of every 3rd wave after the first three)
@@ -92,7 +142,8 @@ public class ModifierManager : MonoBehaviour
         BuildPopup(choices);
     }
 
-    // modifiers not yet taken whose prerequisites are all already selected
+    // modifiers not yet taken whose prerequisites are all already selected and whose excluded
+    // counterparts have not been selected
     private List<ModifierDef> GetOfferable()
     {
         List<ModifierDef> list = new List<ModifierDef>();
@@ -105,6 +156,12 @@ public class ModifierManager : MonoBehaviour
             for (int p = 0; p < m.prerequisites.Count; p++)
             {
                 if (!selectedIds.Contains(m.prerequisites[p])) { ok = false; break; }
+            }
+            if (!ok) continue;
+
+            for (int e = 0; e < m.excludes.Count; e++)
+            {
+                if (selectedIds.Contains(m.excludes[e])) { ok = false; break; }
             }
             if (ok) list.Add(m);
         }

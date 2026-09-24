@@ -171,6 +171,13 @@ namespace TDTK {
 		//~ public void _GainRsc(List<float> list, float mul=1){
 		public static void GainRsc(List<int> list, _GainType type=_GainType.Generic){ instance._GainRsc(IntToFloatList(list), type); }
 		public static void GainRsc(List<float> list, _GainType type=_GainType.Generic){ instance._GainRsc(list, type); }
+		
+		//multiply every current resource amount by a factor (used by the "No risk no fun" upgrade)
+		public static void MultiplyResources(float factor){
+			if(instance==null) return;
+			for(int i=0; i<instance.rscList.Count; i++) instance.rscList[i]=(int)Mathf.Round(instance.rscList[i]*factor);
+			TDTK.OnRscChanged(instance.rscList);
+		}
 		public void _GainRsc(List<float> list, _GainType type=_GainType.Generic){
 			if(!VerifyRscList(list.Count)) return;
 			
