@@ -63,6 +63,10 @@ namespace TDTK{
 		private bool simulating=false;
 		private bool simReachedDest=false;
 		private GameObject previewGhost;
+
+		// whether the last preview simulation reached the goal (set by SimulateTurnDestination)
+		private bool lastSimReachedGoal=false;
+		public bool WillReachGoalNextTurn(){ return lastSimReachedGoal; }
 		
 		[Header("Move Setting")]
 		public bool flying=false;
@@ -503,6 +507,7 @@ namespace TDTK{
 		// cursor (position/rotation/path/waypoint indices) is snapshotted and restored so
 		// nothing about the actual creep or the shared path data is changed.
 		public Vector3 SimulateTurnDestination(){
+			lastSimReachedGoal=false;
 			if(path==null || subPath==null || subPath.Count==0) return thisT.position;
 			if(reverse) return thisT.position;
 			// no bounded stop point exists once the budget is unlimited; skip the preview
@@ -547,6 +552,7 @@ namespace TDTK{
 					}
 				}
 				result=thisT.position;
+				lastSimReachedGoal=simReachedDest;
 			}
 			catch(System.Exception e){
 				Debug.LogWarning("SimulateTurnDestination failed, skipping preview: "+e.Message);
@@ -672,6 +678,26 @@ namespace TDTK{
 		private static void ApplyGhostColor(Material m, Color c){
 			if(m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", c);
 			if(m.HasProperty("_Color")) m.SetColor("_Color", c);
+		}
+
+		// goal highlight: tint the creep red when it is predicted to reach the goal on the coming turn
+		private Renderer[] bodyRenderers;
+		private MaterialPropertyBlock goalMpb;
+		private bool goalHighlighted=false;
+		private static readonly Color goalColor=new Color(1f, 0.2f, 0.2f, 1f);
+
+		public void SetGoalHighlight(bool on){
+			if(on==goalHighlighted && bodyRenderers!=null) return;
+			goalHighlighted=on;
+			if(bodyRenderers==null) bodyRenderers=GetComponentsInChildren<Renderer>();
+			if(goalMpb==null) goalMpb=new MaterialPropertyBlock();
+			for(int i=0; i<bodyRenderers.Length; i++){
+				Renderer r=bodyRenderers[i];
+				if(r==null || r is ParticleSystemRenderer || r is TrailRenderer || r is LineRenderer) continue;
+				goalMpb.Clear();
+				if(on) goalMpb.SetColor("_Color", goalColor);
+				r.SetPropertyBlock(goalMpb);
+			}
 		}
 		
 		public void NextWaypoint(){

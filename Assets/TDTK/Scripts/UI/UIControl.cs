@@ -43,10 +43,11 @@ namespace TDTK{
 		[Space(10)]
 		[Tooltip("Check to have the unit HP overlay always visible")]
 		public bool alwaysShowHPOverlay=false;
-		public static bool AlwaysShowHPOverlay(){ return instance.alwaysShowHPOverlay; }
+		// null-guard matches sibling getters: instance briefly null after a mid-play domain reload (Awake doesn't re-run on existing objects)
+		public static bool AlwaysShowHPOverlay(){ return instance!=null && instance.alwaysShowHPOverlay; }
 		[Tooltip("Check to show text overlay on attack hit")]
 		public bool showTextOverlay=false;
-		public static bool ShowTextOverlay(){ return instance.showTextOverlay; }
+		public static bool ShowTextOverlay(){ return instance!=null && instance.showTextOverlay; }
 		
 		[Space(10)][Tooltip("The reference width used in the canvas scaler\nThis value is used in calculation to get the overlays shows up in the right position")]
 		public float scaleReferenceWidth=1366;

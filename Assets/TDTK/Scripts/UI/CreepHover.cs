@@ -12,11 +12,19 @@ namespace TDTK{
 		private UnitCreep hovered;
 		private UnitCreep hoveredGhostCreep;
 		private UnitTower hoveredTower;
+		private BuildPlatform hoveredPlatform;
 		private UnitCreep highlighted;
 		private GUIStyle boxStyle;
 		private GUIStyle hpStyle;
 
+		// int->string cache so HP numbers don't allocate a new string every frame
+		private static readonly Dictionary<int, string> hpStringCache = new Dictionary<int, string>();
+		private static readonly GUIContent sharedContent = new GUIContent();
+
 		private static readonly Color CreepHPColor = new Color(1f, 0.6f, 0.6f);
+
+		// how close (world units) the mouse ray must pass to a creep's body to count as a hover
+		private const float CreepHoverRadius = 0.55f;
 
 		[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
 		static void Bootstrap(){
@@ -29,6 +37,7 @@ namespace TDTK{
 			hovered=null;
 			hoveredGhostCreep=null;
 			hoveredTower=null;
+			hoveredPlatform=null;
 
 			Camera cam=Camera.main;
 			if(cam==null){ SetHighlight(null); return; }
@@ -36,11 +45,10 @@ namespace TDTK{
 			Ray ray=cam.ScreenPointToRay(Input.mousePosition);
 			RaycastHit hit;
 
-			int creepMask=1<<TDTK.GetLayerCreep();
-			if(Physics.Raycast(ray, out hit, Mathf.Infinity, creepMask)){
-				UnitCreep creep=hit.collider.GetComponentInParent<UnitCreep>();
-				if(creep!=null && creep.hp>0) hovered=creep;
-			}
+			// creep hover is proximity-based: the creep's physics collider is a small sphere at its
+			// feet, so raycasting the body misses. Instead pick the creep whose body center lies
+			// closest to the mouse ray (nearest-to-camera on ties).
+			hovered=FindCreepUnderRay(ray, cam);
 
 			if(hovered==null){
 				int ghostMask=1<<2;	//ghosts sit on the Ignore Raycast layer; reachable only via explicit mask
@@ -58,7 +66,42 @@ namespace TDTK{
 				}
 			}
 
+			// a special build platform shows its effect description when nothing else is hovered
+			if(hovered==null && hoveredGhostCreep==null && hoveredTower==null){
+				int platformMask=1<<TDTK.GetLayerPlatform();
+				if(Physics.Raycast(ray, out hit, Mathf.Infinity, platformMask)){
+					BuildPlatform pl=hit.collider.GetComponentInParent<BuildPlatform>();
+					if(pl!=null && pl.HasSpecial()) hoveredPlatform=pl;
+				}
+			}
+
 			SetHighlight(hovered!=null ? hovered : hoveredGhostCreep);
+		}
+
+		// returns the active creep whose body center is within CreepHoverRadius of the mouse ray,
+		// choosing the one nearest the camera when several overlap
+		private UnitCreep FindCreepUnderRay(Ray ray, Camera cam){
+			UnitCreep best=null;
+			float bestAlong=Mathf.Infinity;
+
+			List<Unit> list=SpawnManager.GetActiveUnitList();
+			for(int i=0; i<list.Count; i++){
+				if(list[i]==null) continue;
+				UnitCreep creep=list[i].GetCreep();
+				if(creep==null || creep.IsDestroyed() || creep.hp<=0) continue;
+
+				Vector3 center=creep.GetTargetPoint();
+				Vector3 v=center-ray.origin;
+				float along=Vector3.Dot(v, ray.direction);
+				if(along<0) continue;	//behind the camera
+
+				Vector3 closest=ray.origin+ray.direction*along;
+				if(Vector3.Distance(closest, center)>CreepHoverRadius) continue;
+
+				if(along<bestAlong){ bestAlong=along; best=creep; }
+			}
+
+			return best;
 		}
 
 		// highlight the active pair; clear the previous one when the hover target changes
@@ -69,11 +112,14 @@ namespace TDTK{
 		}
 
 		void OnGUI(){
+			if(Event.current.type!=EventType.Repaint) return;	//fixed-rect IMGUI needs no layout pass; skip all other events
+
 			DrawUnitHPNumbers();
 
 			if(hovered!=null) DrawCreepBox(hovered);
 			else if(hoveredGhostCreep!=null) DrawCreepBox(hoveredGhostCreep);
 			else if(hoveredTower!=null) DrawTowerBox();
+			else if(hoveredPlatform!=null) DrawPlatformBox();
 		}
 
 		// small always-on HP number floating above every creep so the player can gauge unit strength
@@ -102,7 +148,18 @@ namespace TDTK{
 			float w=48, h=18;
 			float x=screenPos.x-w*0.5f;
 			float y=(Screen.height-screenPos.y)-h;
-			GUI.Label(new Rect(x, y, w, h), Mathf.CeilToInt(unit.GetHP()).ToString(), hpStyle);
+			sharedContent.text=GetCachedIntString(Mathf.CeilToInt(unit.GetHP()));
+			GUI.Label(new Rect(x, y, w, h), sharedContent, hpStyle);
+		}
+
+		private static string GetCachedIntString(int value){
+			string s;
+			if(!hpStringCache.TryGetValue(value, out s)){
+				if(hpStringCache.Count>4096) hpStringCache.Clear();	//safety cap
+				s=value.ToString();
+				hpStringCache.Add(value, s);
+			}
+			return s;
 		}
 
 		private void EnsureStyle(){
@@ -111,6 +168,7 @@ namespace TDTK{
 				boxStyle.alignment=TextAnchor.UpperLeft;
 				boxStyle.padding=new RectOffset(8, 8, 6, 6);
 				boxStyle.normal.textColor=Color.white;
+				boxStyle.wordWrap=true;	//long effect descriptions wrap to new lines instead of being clipped
 			}
 		}
 
@@ -125,9 +183,7 @@ namespace TDTK{
 				text += "\nShield: " + Mathf.CeilToInt(creep.sh) + " / " + Mathf.CeilToInt(creep.GetFullSH());
 			}
 
-			float w=180;
-			float h=hasShield ? 74 : 56;
-			DrawBox(text, w, h);
+			DrawBox(text, 180);
 		}
 
 		private void DrawTowerBox(){
@@ -143,11 +199,25 @@ namespace TDTK{
 			}
 
 			float w=180;
-			float h=hasDamage ? 92 : 38;
-			DrawBox(text, w, h);
+
+			if(hoveredTower.HasPlatformEffect() && !string.IsNullOrEmpty(hoveredTower.platformEffectDesc)){
+				text += "\n\n" + hoveredTower.platformEffectDesc;
+				w=260;
+			}
+
+			DrawBox(text, w);
 		}
 
-		private void DrawBox(string text, float w, float h){
+		private void DrawPlatformBox(){
+			EnsureStyle();
+			DrawBox(hoveredPlatform.specialDesc, 260);
+		}
+
+		private void DrawBox(string text, float w){
+			// height grows to fit the wrapped text at the given width so nothing is clipped
+			sharedContent.text=text;
+			float h=boxStyle.CalcHeight(sharedContent, w);
+
 			float x=Input.mousePosition.x+16;
 			float y=(Screen.height-Input.mousePosition.y)+16;
 

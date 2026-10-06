@@ -11,10 +11,10 @@ namespace TDTK {
 		public enum _GameState{ Init, Playing, Paused, Over }
 		//[HideInInspector] 
 		public _GameState gameState=_GameState.Init;
-		public static bool HasGameStarted(){ return instance.gameState!=_GameState.Init; }
-		public static bool IsGamePlaying(){ return instance.gameState==_GameState.Playing; }
-		public static bool IsGameOver(){ return instance.gameState==_GameState.Over; }
-		public static bool IsGamePaused(){ return instance.gameState==_GameState.Paused; }
+		public static bool HasGameStarted(){ return instance!=null && instance.gameState!=_GameState.Init; }
+		public static bool IsGamePlaying(){ return instance!=null && instance.gameState==_GameState.Playing; }
+		public static bool IsGameOver(){ return instance!=null && instance.gameState==_GameState.Over; }
+		public static bool IsGamePaused(){ return instance!=null && instance.gameState==_GameState.Paused; }
 		
 		private bool playerWon=false;
 		public static bool HasPlayerWon(){ return instance.playerWon; }

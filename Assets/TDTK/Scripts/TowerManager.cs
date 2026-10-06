@@ -461,13 +461,17 @@ namespace TDTK{
 		
 		public static void BuildTower(UnitTower prefab, BuildPlatform platform, int nodeID, bool useRsc=true, bool isUpgrade=false, int typeID=-1){
 			if(!TurnManager.IsPlanning()) return;	//no building during the creep (resolution) turn
+			
+			//special platforms change the build cost (effect 1: -15%, effect 3: +30%)
+			List<float> cost=ApplyPlatformCost(prefab.GetCost(), platform);
+			
 			if(useRsc){
-				if(!RscManager.HasSufficientRsc(prefab.GetCost())){
+				if(!RscManager.HasSufficientRsc(cost)){
 					Debug.Log("Insufficient resources");
 					return;
 				}
 				//Debug.Log("Get cost "+prefab.GetCost()[0]);
-				RscManager.SpendRsc(prefab.GetCost());
+				RscManager.SpendRsc(cost);
 			}
 			
 			NodeTD node=platform.GetNode(nodeID);
@@ -480,6 +484,18 @@ namespace TDTK{
 			
 			bool updatePath=!isUpgrade;
 			AddTower(tower, platform, nodeID, updatePath);
+		}
+		
+		// scale a tower cost by the platform's special effect (1: cheaper, 3: pricier)
+		static List<float> ApplyPlatformCost(List<float> cost, BuildPlatform platform){
+			if(cost==null || platform==null || !platform.HasSpecial()) return cost;
+			float mul=1f;
+			if(platform.specialEffect==1) mul=0.85f;
+			else if(platform.specialEffect==3) mul=1.30f;
+			if(mul==1f) return cost;
+			List<float> list=new List<float>(cost);
+			for(int i=0; i<list.Count; i++) list[i]=Mathf.Max(0, list[i]*mul);
+			return list;
 		}
 		
 		public static void PreBuildTower(UnitTower tower){
@@ -536,6 +552,7 @@ namespace TDTK{
 			if(platform!=null && nodeID>=0){
 				tower.SetBuildPoint(platform, nodeID);
 				platform.BuildTower(nodeID, tower, updatePath);
+				tower.StampPlatformEffect(platform);
 			}
 			
 			//for limiting tower count in the scene according to typeID

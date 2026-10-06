@@ -13,6 +13,12 @@ public class GameHandler : MonoBehaviour
     public static int shift;
     public static int shift2;
 
+    // bridges kept on one side only: outer=upper, middle=lower, inner=upper. The opposite-side
+    // bridge of each ring is disabled at startup so creeps always cross on the chosen side.
+    private static readonly string[] allBridges = { "Path1C12", "Path1C27", "Path2C4", "Path2C19", "Path3C12", "Path3C27" };
+    private static readonly string[] disabledBridges = { "Path1C27", "Path2C4", "Path3C27" };
+    private readonly Dictionary<string, GameObject> bridgeCache = new Dictionary<string, GameObject>();
+
     public static bool IsMovingOuter;
     public static bool IsMovingInner;
     public static bool IsMovingSmall;
@@ -25,9 +31,6 @@ public class GameHandler : MonoBehaviour
     private Button outerBtn, innerBtn, smallBtn, revertBtn;
     // which ring was rotated this turn, so revert knows what to reverse (-1 = none)
     private int lastRotatedLayer = -1;
-
-    // reused buffer so the per-frame hover raycast doesn't allocate
-    private readonly RaycastHit[] hoverHits = new RaycastHit[32];
 
     // Start is called before the first frame update
     void Start()
@@ -47,6 +50,31 @@ public class GameHandler : MonoBehaviour
             if (revertBtn != null) revertBtn.onClick.AddListener(RevertRotation);
             revGO.SetActive(false);
         }
+
+        ConfigureBridges();
+    }
+
+    // cache every bridge (while still active) and disable the opposite-side bridge of each ring
+    private void ConfigureBridges()
+    {
+        for (int i = 0; i < allBridges.Length; i++)
+        {
+            var go = GameObject.Find(allBridges[i]);
+            if (go != null) bridgeCache[allBridges[i]] = go;
+        }
+        for (int i = 0; i < disabledBridges.Length; i++)
+        {
+            GameObject go;
+            if (bridgeCache.TryGetValue(disabledBridges[i], out go) && go != null) go.SetActive(false);
+        }
+    }
+
+    // look up a bridge even when inactive (GameObject.Find skips inactive objects)
+    private GameObject GetBridge(string n)
+    {
+        GameObject go;
+        if (bridgeCache.TryGetValue(n, out go) && go != null) return go;
+        return GameObject.Find(n);
     }
 
     private Button FindButton(string n)
@@ -65,40 +93,6 @@ public class GameHandler : MonoBehaviour
         };
 
         RefreshRotationUI();
-        UpdateCreepHover();
-    }
-
-    // shows the hovered creep's unitName in the shared tooltip; only hides it when we were the one showing it
-    private bool creepTooltipShown = false;
-    private void UpdateCreepHover()
-    {
-        var cam = Camera.main;
-        if (cam == null) return;
-
-        bool overUI = UnityEngine.EventSystems.EventSystem.current != null
-            && UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject();
-
-        if (!overUI)
-        {
-            Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-            UnitCreep nearest = null;
-            float best = Mathf.Infinity;
-            int count = Physics.RaycastNonAlloc(ray, hoverHits);
-            for (int i = 0; i < count; i++)
-            {
-                var h = hoverHits[i];
-                var c = h.collider.GetComponentInParent<UnitCreep>();
-                if (c != null && !c.IsDestroyed() && h.distance < best) { best = h.distance; nearest = c; }
-            }
-            if (nearest != null)
-            {
-                UITooltip.ShowCreepName(nearest.unitName, Input.mousePosition + new Vector3(14, 14, 0));
-                creepTooltipShown = true;
-                return;
-            }
-        }
-
-        if (creepTooltipShown) { UITooltip.Hide(); creepTooltipShown = false; }
     }
 
     // rotation buttons are usable only when the turn manager allows it (planning, off cooldown,
@@ -175,14 +169,14 @@ public class GameHandler : MonoBehaviour
         if (IsLayerMoving(layer)) return false;
         SetLayerMoving(layer, true);
 
-        var path1 = GameObject.Find(p1n).GetComponent<Path>();
-        var path2 = GameObject.Find(p2n).GetComponent<Path>();
+        var b1 = GetBridge(p1n);
+        var b2 = GetBridge(p2n);
 
         // carry any creeps on this ring so they rotate along with it, then restore their parent afterwards.
         // detach to the scene root (uniform) and spin them via RotateAround so a scaled ring never distorts them
         var ridingCreeps = new List<UnitCreep>();
-        ridingCreeps.AddRange(path1.GetComponentsInChildren<UnitCreep>());
-        ridingCreeps.AddRange(path2.GetComponentsInChildren<UnitCreep>());
+        if (b1 != null) ridingCreeps.AddRange(b1.GetComponentsInChildren<UnitCreep>());
+        if (b2 != null) ridingCreeps.AddRange(b2.GetComponentsInChildren<UnitCreep>());
         var creepParents = new List<Transform>();
         foreach (var c in ridingCreeps)
         {
@@ -190,8 +184,11 @@ public class GameHandler : MonoBehaviour
             c.transform.SetParent(null, true);
         }
 
-        path1.gameObject.SetActive(false);
-        path2.gameObject.SetActive(false);
+        // remember each bridge's state so a disabled (one-side) bridge is not re-enabled after the spin
+        bool b1Active = b1 != null && b1.activeSelf;
+        bool b2Active = b2 != null && b2.activeSelf;
+        if (b1 != null) b1.SetActive(false);
+        if (b2 != null) b2.SetActive(false);
 
         float total = revert ? mag : -mag;   // forward rotates negative, revert positive
         float step = 0.5f * Mathf.Sign(total);
@@ -204,8 +201,8 @@ public class GameHandler : MonoBehaviour
             await Task.Delay(1);
         }
 
-        path1.gameObject.SetActive(true);
-        path2.gameObject.SetActive(true);
+        if (b1 != null) b1.SetActive(b1Active);
+        if (b2 != null) b2.SetActive(b2Active);
 
         for (int i = 0; i < ridingCreeps.Count; i++)
         {

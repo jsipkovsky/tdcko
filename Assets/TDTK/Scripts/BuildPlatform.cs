@@ -16,6 +16,57 @@ namespace TDTK{
 		public bool walkable=false;
 		public List<Path> pathList=new List<Path>(); 	//all path that use the platform as waypoint
 		public void AddPath(Path path){ pathList.Add(path); }
+
+		//special effect assigned by PlatformEffectManager (0=none, 1..4=effect); desc shown on hover
+		[HideInInspector] public int specialEffect=0;
+		[HideInInspector] public string specialDesc="";
+		private GameObject specialOverlay;
+
+		public bool HasSpecial(){ return specialEffect!=0; }
+
+		public void SetSpecial(int effect, string desc){
+			specialEffect=effect;
+			specialDesc=desc;
+			ApplyOverlay(PlatformEffectColor(effect));
+		}
+
+		public void ClearSpecial(){
+			specialEffect=0;
+			specialDesc="";
+			if(specialOverlay!=null) specialOverlay.SetActive(false);
+		}
+
+		private static Color PlatformEffectColor(int effect){
+			switch(effect){
+				case 1: return new Color(0.3f, 1f, 0.3f, 0.45f);	//cheaper/weaker - green
+				case 2: return new Color(0.3f, 0.6f, 1f, 0.45f);	//skip then faster - blue
+				case 3: return new Color(1f, 0.85f, 0.15f, 0.45f);	//pricier/more gold - yellow
+				case 4: return new Color(0.75f, 0.4f, 1f, 0.45f);	//buff nearest - purple
+				default: return new Color(1f, 1f, 1f, 0f);
+			}
+		}
+
+		//the grid tile texture is mostly transparent, so a _Color tint is invisible;
+		//drop a semi-transparent colored quad on top as the visible marker instead
+		private void ApplyOverlay(Color c){
+			if(specialOverlay==null){
+				specialOverlay=GameObject.CreatePrimitive(PrimitiveType.Quad);
+				specialOverlay.name="SpecialEffectOverlay";
+				Collider col=specialOverlay.GetComponent<Collider>();
+				if(col!=null) Destroy(col);
+				Transform t=specialOverlay.transform;
+				t.SetParent(transform, false);
+				t.localPosition=new Vector3(0, 0, -0.03f);
+				t.localRotation=Quaternion.identity;
+				t.localScale=Vector3.one*0.95f;
+				MeshRenderer mr=specialOverlay.GetComponent<MeshRenderer>();
+				mr.sharedMaterial=new Material(Shader.Find("Sprites/Default"));
+				mr.shadowCastingMode=UnityEngine.Rendering.ShadowCastingMode.Off;
+				mr.receiveShadows=false;
+			}
+			specialOverlay.SetActive(true);
+			specialOverlay.GetComponent<MeshRenderer>().sharedMaterial.color=c;
+		}
 		
 		[HideInInspector] public Transform thisT;
 		

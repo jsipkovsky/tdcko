@@ -41,6 +41,13 @@ namespace TDTK{
 		public virtual void OnUpgradeAttack(List<Unit> targets){ }
 		public virtual void OnUpgradeKill(Unit victim){ }
 		public virtual void OnUpgradeSurvivedHit(Unit victim){ }
+
+		//hooks for special build-platform effects (overridden by UnitTower); no-ops for creeps
+		public virtual bool IsPlatformAttackBlocked(){ return false; }
+		public virtual float GetPlatformDmgMul(){ return 1f; }
+		public virtual float GetPlatformDmgAddMin(){ return 0f; }
+		public virtual float GetPlatformDmgAddMax(){ return 0f; }
+		public virtual float GetPlatformCooldownMul(){ return 1f; }
 		
 		
 		
@@ -601,6 +608,9 @@ namespace TDTK{
 			//Blade "Tough shift": forced recovery window blocks attacking
 			if(IsUpgradeAttackBlocked()) return;
 			
+			//special build-platform effect may block attacking (e.g. buff-only or skip-first-turn towers)
+			if(IsPlatformAttackBlocked()) return;
+			
 			if(resetTargetOnAttack && !targetReset){
 				targetReset=true;
 				ClearTarget();
@@ -787,11 +797,11 @@ namespace TDTK{
 		
 		public float GetSpeed(){ 		return (statsList[level].speed + GetModSpeed()) * GetMulSpeed() * GetCreepSpeedMul();  }
 		
-		public float GetDamageMin(){ 	return (statsList[level].damageMin + GetModDmgMin() + UpgradeState.DmgMod(prefabID)) * GetMulDmgMin() * UpgradeState.DmgMul(prefabID); }
-		public float GetDamageMax(){ 	return (statsList[level].damageMax + GetModDmgMax() + UpgradeState.DmgMod(prefabID)) * GetMulDmgMax() * UpgradeState.DmgMul(prefabID); }
+		public float GetDamageMin(){ 	return (statsList[level].damageMin + GetModDmgMin() + UpgradeState.DmgMod(prefabID) + GetPlatformDmgAddMin()) * GetMulDmgMin() * UpgradeState.DmgMul(prefabID) * GetPlatformDmgMul(); }
+		public float GetDamageMax(){ 	return (statsList[level].damageMax + GetModDmgMax() + UpgradeState.DmgMod(prefabID) + GetPlatformDmgAddMax()) * GetMulDmgMax() * UpgradeState.DmgMul(prefabID) * GetPlatformDmgMul(); }
 		public float GetAttackRange(){ return (statsList[level].attackRange + GetModAttackRange()) * GetMulAttackRange() * UpgradeState.RangeMul(prefabID); }
 		public float GetAOERange(){ 	return (statsList[level].aoeRange + GetModAOE() + UpgradeState.AoeMod(prefabID)) * GetMulAOE(); }
-		public float GetCooldown(){ 	return (statsList[level].cooldown + GetModCD() + UpgradeState.CooldownMod(prefabID)) * GetMulCD() * UpgradeState.CooldownMul(prefabID) * GetUpgradeCooldownFactor(); }
+		public float GetCooldown(){ 	return (statsList[level].cooldown + GetModCD() + UpgradeState.CooldownMod(prefabID)) * GetMulCD() * UpgradeState.CooldownMul(prefabID) * GetUpgradeCooldownFactor() * GetPlatformCooldownMul(); }
 		
 		public float GetHit(){ 				return (statsList[level].hit + GetModHit()) * GetMulHit(); }
 		public float GetCritChance(){ 	return (statsList[level].critChance + GetModCritChance()) * GetMulCritChance(); }

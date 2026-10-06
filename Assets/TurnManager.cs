@@ -166,6 +166,7 @@ public class TurnManager : MonoBehaviour
         TickCooldowns();
         GrantIncome();
         SpawnWaveForTurn();
+        PlatformEffectManager.RerollIfDue(turnNumber);
         RecomputePreviews();
 
         // show the End Turn button only while the player is planning
@@ -302,6 +303,8 @@ public class TurnManager : MonoBehaviour
             if (creep == null) continue;
             Vector3 dest = creep.SimulateTurnDestination();
             creep.ShowPreviewGhost(dest);
+            // highlight creeps that will reach the goal on the coming resolution turn
+            creep.SetGoalHighlight(creep.WillReachGoalNextTurn());
         }
     }
 
@@ -314,6 +317,7 @@ public class TurnManager : MonoBehaviour
             UnitCreep creep = list[i].GetCreep();
             if (creep == null) continue;
             creep.HidePreviewGhost();
+            creep.SetGoalHighlight(false);
         }
     }
 }

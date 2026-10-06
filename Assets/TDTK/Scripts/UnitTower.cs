@@ -413,6 +413,53 @@ namespace TDTK{
 		public void SetBuildPoint(BuildPlatform platform, int ID){
 			buildPlatform=platform; nodeID=ID;
 		}
+
+		//---- special build-platform effect (stamped at build time, kept for the tower's life) ----
+		// 0=none, 1=cheaper/weaker, 2=skip-first-turn-then-faster, 3=pricier/more-gold, 4=buff-nearest
+		[HideInInspector] public int platformEffect=0;
+		[HideInInspector] public string platformEffectDesc="";
+		[HideInInspector] public int platformBuiltTurn=-999;
+		//damage this tower received from a nearby "buff" (effect 4) tower
+		[HideInInspector] public float platformBuffDmgMin=0;
+		[HideInInspector] public float platformBuffDmgMax=0;
+
+		public void StampPlatformEffect(BuildPlatform platform){
+			if(platform==null || !platform.HasSpecial()) return;
+			platformEffect=platform.specialEffect;
+			platformEffectDesc=platform.specialDesc;
+			platformBuiltTurn=TurnManager.turnNumber;
+			if(platformEffect==4) ApplyBuffToNearestSameType();
+		}
+
+		public bool HasPlatformEffect(){ return platformEffect!=0; }
+
+		// effect 4: this tower can't attack; it adds its damage to the closest same-type tower without an effect
+		private void ApplyBuffToNearestSameType(){
+			UnitTower best=null; float bestDist=Mathf.Infinity;
+			List<UnitTower> towers=TowerManager.GetActiveTowerList();
+			for(int i=0; i<towers.Count; i++){
+				UnitTower t=towers[i];
+				if(t==null || t==this) continue;
+				if(t.prefabID!=prefabID) continue;
+				if(t.HasPlatformEffect()) continue;
+				float d=Vector3.Distance(GetPos(), t.GetPos());
+				if(d<bestDist){ bestDist=d; best=t; }
+			}
+			if(best!=null){
+				best.platformBuffDmgMin+=statsList[level].damageMin;
+				best.platformBuffDmgMax+=statsList[level].damageMax;
+			}
+		}
+
+		public override bool IsPlatformAttackBlocked(){
+			if(platformEffect==4) return true;								//buff tower never attacks
+			if(platformEffect==2 && TurnManager.turnNumber==platformBuiltTurn) return true;	//skip first resolution turn
+			return false;
+		}
+		public override float GetPlatformDmgMul(){ return platformEffect==1 ? 0.85f : 1f; }
+		public override float GetPlatformDmgAddMin(){ return platformBuffDmgMin; }
+		public override float GetPlatformDmgAddMax(){ return platformBuffDmgMax; }
+		public override float GetPlatformCooldownMul(){ return platformEffect==2 ? (1f/1.2f) : 1f; }
 		
 		
 		[Space(10)] 
@@ -551,6 +598,16 @@ namespace TDTK{
 		public override void OnUpgradeKill(Unit victim){
 			if(UpgradeState.SSTKillingSpree(this)){ sstKillsThisTurn++; sstHadKillLastTurn=true; }
 			if(UpgradeState.SniperAllOrNothing(this)) cooldown=0f;	//free follow-up shot
+
+			//effect 3: towers on this platform generate 50% more gold on kill
+			if(platformEffect==3 && victim!=null){
+				UnitCreep creep=victim.GetCreep();
+				if(creep!=null && creep.rscGainOnDestroyed!=null && creep.rscGainOnDestroyed.Count>0){
+					List<int> bonus=new List<int>();
+					for(int i=0; i<creep.rscGainOnDestroyed.Count; i++) bonus.Add(Mathf.RoundToInt(creep.rscGainOnDestroyed[i]*0.5f));
+					RscManager.GainRsc(bonus, RscManager._GainType.CreepKilled);
+				}
+			}
 		}
 		
 		public override void OnUpgradeSurvivedHit(Unit victim){
